@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Magic Stones & Treasure Game</title>
 
-    <!-- Google Fonts: Fredoka for high-energy, fun, legible fantasy headers -->
+    <!-- Google Fonts: Fredoka for cheerful fantasy typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,13 +18,11 @@
                 extend: {
                     colors: {
                         parchment: '#FAF6EE',
-                        parchmentDark: '#EFE3CA',
-                        woodBorder: '#5C2C16',
-                        woodPanel: '#8B4513',
+                        woodBorder: '#4A2311',
                         goldAccent: '#D97706',
                         goldGlow: '#FBBF24',
-                        magicTeal: '#0284C7',
-                        magicCyan: '#00F2FE'
+                        magicCyan: '#00F2FE',
+                        magicTeal: '#0284C7'
                     },
                     fontFamily: {
                         fredoka: ['Fredoka', 'cursive', 'sans-serif']
@@ -35,64 +33,62 @@
     </script>
 
     <style>
-        body {
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            min-height: 100vh;
             background-color: #FAF6EE;
             background-image: 
-                radial-gradient(circle at 15% 15%, rgba(243, 233, 210, 0.8) 0%, transparent 45%),
-                radial-gradient(circle at 85% 85%, rgba(254, 243, 199, 0.6) 0%, transparent 45%),
-                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
-            color: #331E11;
+                radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.18) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(2, 132, 199, 0.15) 0%, transparent 40%);
+            color: #2D180C;
             font-family: 'Fredoka', cursive, sans-serif;
-            min-height: 100vh;
-            user-select: none;
             overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Subtle floating background magic dust pattern */
-        .magic-bg-pattern {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background-image: radial-gradient(#D97706 1px, transparent 1px);
-            background-size: 28px 28px;
-            opacity: 0.12;
+        .game-wrapper {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100vh;
         }
 
-        /* Responsive Ultra-Compact Board Container (Maximizes width, tiny margins) */
+        /* Full edge-to-edge row container for all 16 doors & 15 sockets */
         .board-container {
             display: flex;
             align-items: center;
             justify-content: space-between;
             width: 100%;
-            max-width: 1380px;
-            margin: 0 auto;
-            gap: 2px;
-            padding: 4px;
+            margin: 0;
+            padding: 0;
+            gap: 0;
+            position: relative;
         }
 
-        @media (min-width: 640px) {
-            .board-container { gap: 4px; padding: 8px; }
-        }
-
-        /* Door Card Styling & Aspect Ratio */
+        /* Door Card Styling & Responsive Slide Reveal */
         .door-card {
             flex: 1 1 0%;
             min-width: 0;
             position: relative;
-            aspect-ratio: 1 / 2.1;
-            max-height: 175px;
-            border-radius: 8px;
+            aspect-ratio: 1 / 2.2;
+            max-height: 220px;
             overflow: hidden;
-            box-shadow: 0 4px 8px -2px rgba(92, 44, 22, 0.25);
             background: #D7C9AA;
+            box-shadow: 0 4px 6px -1px rgba(74, 35, 17, 0.25);
+            border-radius: 4px;
         }
 
-        /* Smooth Vertical Slide Reveal for Doors */
         .door-panel-slide {
             position: absolute;
             inset: 0;
             z-index: 20;
-            transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1);
+            transition: transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1);
             will-change: transform;
             cursor: pointer;
         }
@@ -102,169 +98,208 @@
             pointer-events: none;
         }
 
-        /* Inter-door Gap Slot ("Between the Doors") */
-        .gap-slot {
-            flex: 0 0 12px;
+        /* EXTREMELY CLEAR INTERACTION SOCKETS BETWEEN DOORS */
+        .gap-socket-hitbox {
+            flex: 0 0 18px;
+            margin: 0 -4px;
             height: 100%;
-            max-height: 175px;
+            max-height: 220px;
+            z-index: 35;
+            cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 5px;
-            transition: all 0.2s ease;
             position: relative;
-            z-index: 25;
         }
 
         @media (min-width: 640px) {
-            .gap-slot { flex: 0 0 22px; }
-        }
-
-        /* Active Target Target Slot Pulse */
-        .slot-target-active {
-            animation: slotPulse 1.1s infinite ease-in-out;
-            background-color: #FEF3C7 !important;
-            border: 2px dashed #D97706 !important;
-            box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
-        }
-
-        @keyframes slotPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.12); }
-        }
-
-        /* Shimmer Wave Effect Over Doors when Direction Revealed */
-        @keyframes doorShimmerWave {
-            0% {
-                box-shadow: 0 0 0px rgba(2, 132, 199, 0);
-                filter: brightness(1);
-                transform: translateY(0);
-            }
-            40% {
-                box-shadow: 0 0 18px rgba(0, 242, 254, 0.9);
-                filter: brightness(1.2) contrast(1.1);
-                transform: translateY(-4px);
-            }
-            100% {
-                box-shadow: 0 0 0px rgba(2, 132, 199, 0);
-                filter: brightness(1);
-                transform: translateY(0);
+            .gap-socket-hitbox {
+                flex: 0 0 26px;
+                margin: 0 -6px;
             }
         }
 
-        .shimmer-active {
-            animation: doorShimmerWave 0.85s ease-out forwards;
+        /* Visible Glowing Socket Ring Pedestal */
+        .socket-pedestal {
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: #FEF3C7;
+            border: 2px solid #D97706;
+            box-shadow: 0 0 6px rgba(217, 119, 6, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
         }
 
-        /* Floating Animation for Unused Inventory Stones */
+        @media (min-width: 640px) {
+            .socket-pedestal {
+                width: 24px;
+                height: 24px;
+                border-width: 2.5px;
+            }
+        }
+
+        /* Pulsing Socket Ring when Stone is selected or being dragged */
+        .socket-pedestal.is-active-target {
+            animation: socketPulse 0.9s infinite ease-in-out;
+            border-color: #00F2FE !important;
+            background: #E0F2FE !important;
+            box-shadow: 0 0 12px #00F2FE, 0 0 4px #0284C7;
+            transform: scale(1.25);
+        }
+
+        @keyframes socketPulse {
+            0%, 100% { transform: scale(1.15); box-shadow: 0 0 8px #00F2FE; }
+            50% { transform: scale(1.35); box-shadow: 0 0 16px #00F2FE, 0 0 24px #0284C7; }
+        }
+
+        .gap-socket-hitbox:hover .socket-pedestal {
+            transform: scale(1.2);
+            border-color: #0284C7;
+            background: #E0F2FE;
+        }
+
+        /* Sequential Shimmer Wave across doors */
+        @keyframes doorShimmerGlow {
+            0% { filter: brightness(1); transform: translateY(0); }
+            40% { filter: brightness(1.4) contrast(1.25); box-shadow: 0 0 22px #00F2FE; transform: translateY(-4px); }
+            100% { filter: brightness(1); transform: translateY(0); }
+        }
+
+        .door-shimmer {
+            animation: doorShimmerGlow 0.5s ease-out forwards;
+        }
+
         .stone-float {
-            animation: stoneFloat 2.8s infinite ease-in-out;
+            animation: stoneFloat 2.5s infinite ease-in-out;
         }
 
         @keyframes stoneFloat {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
+            50% { transform: translateY(-3.5px); }
         }
 
-        /* Spectral Energy Sweep Overlay Across Doors */
-        @keyframes energySweep {
-            0% { opacity: 0; transform: scaleX(0.05); }
-            35% { opacity: 1; transform: scaleX(1); }
-            80% { opacity: 0.8; }
-            100% { opacity: 0; transform: scaleX(1); }
-        }
-
-        .spectral-beam-sweep {
-            animation: energySweep 0.75s ease-out forwards;
+        /* Canvas overlay for electric lightning bolts */
+        #lightning-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 45;
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-between min-h-screen p-2 sm:p-4 relative">
+<body class="relative">
 
-    <!-- Background Sparkle Texture -->
-    <div class="magic-bg-pattern"></div>
+    <!-- Electric Lightning Canvas -->
+    <canvas id="lightning-canvas"></canvas>
 
-    <!-- Top Whimsical Header -->
-    <header class="w-full max-w-7xl flex items-center justify-between gap-2 mb-1 px-1 z-10">
-        <div class="flex items-center gap-2">
-            <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-md border-2 border-amber-200">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+    <div class="game-wrapper">
+        <!-- Header & Logo Emblem -->
+        <header class="w-full px-2 sm:px-4 pt-2 pb-1 flex items-center justify-between gap-2 z-10">
+            <div class="flex items-center gap-2 bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border-2 border-amber-400/80 rounded-2xl p-1.5 sm:p-2 shadow-md">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-0.5 shadow-md shrink-0 flex items-center justify-center">
+                    <svg class="w-full h-full drop-shadow" viewBox="0 0 100 100" fill="none">
+                        <polygon points="50,10 85,30 75,85 25,85 15,30" fill="#0284C7" stroke="#00F2FE" stroke-width="3"/>
+                        <path d="M30,55 H70 V80 H30 Z" fill="#FBBF24" stroke="#78350F" stroke-width="2"/>
+                        <circle cx="50" cy="40" r="10" fill="#FBBF24" stroke="#FFFFFF" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-2xl font-extrabold text-amber-950 tracking-wide leading-none font-fredoka drop-shadow-sm flex items-center gap-1">
+                        MAGIC STONES <span class="text-amber-600 font-black">&amp;</span> TREASURE
+                    </h1>
+                    <p class="text-[10px] sm:text-xs text-amber-800 font-semibold mt-0.5">Drop stones into gaps between doors to unleash lightning clues!</p>
+                </div>
+            </div>
+
+            <button id="reset-btn" class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-b from-amber-200 to-amber-300 hover:from-amber-300 hover:to-amber-400 border-2 border-amber-500 text-amber-950 font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-1.5 shrink-0">
+                <svg class="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Reset Game
+            </button>
+        </header>
+
+        <!-- Magic Stone Inventory Pouch -->
+        <section class="w-full px-2 sm:px-4 py-1.5 z-10">
+            <div class="bg-amber-100/90 border-2 border-amber-300 rounded-2xl p-2 shadow-sm">
+                <div class="flex items-center justify-between px-2 pb-1 border-b border-amber-200">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+                        <span class="text-xs sm:text-sm font-bold text-amber-950 uppercase font-fredoka tracking-wider">Magic Stone Pouch</span>
+                        <span id="stone-counter" class="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-xs">
+                            Stones Left: 4 / 4
+                        </span>
+                    </div>
+                    <span class="text-[11px] sm:text-xs text-amber-800 font-medium hidden sm:inline">Click or Drag a stone to any glowing gap socket!</span>
+                </div>
+
+                <div id="inventory-container" class="flex items-center justify-center gap-3 sm:gap-6 mt-1.5">
+                    <!-- Dynamic Stone Slots -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Edge-to-Edge Board Row -->
+        <main class="w-full my-auto py-2 relative z-10">
+            <div id="board-row" class="board-container">
+                <!-- 16 Doors and 15 Clear Socket Hitboxes rendered dynamically -->
+            </div>
+        </main>
+
+        <!-- Bottom Guidance Bar -->
+        <footer class="w-full px-2 sm:px-4 py-2 z-10">
+            <div class="bg-amber-100/90 border-2 border-amber-300 rounded-2xl p-2.5 shadow-sm flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-amber-300 text-amber-900 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div id="oracle-message" class="text-xs sm:text-sm font-bold text-amber-950 truncate flex-1">
+                    Select or drag a Magic Stone into a socket between doors to locate the treasure!
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal 1: Early Door Opening Confirmation -->
+    <div id="confirm-modal" class="fixed inset-0 bg-amber-950/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-amber-50 border-4 border-amber-400 rounded-3xl p-5 sm:p-6 max-w-md w-full text-center shadow-2xl transform scale-95 transition-transform duration-200">
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-amber-800 mb-2">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
             </div>
-            <div>
-                <h1 class="text-lg sm:text-2xl font-bold text-amber-950 tracking-wide font-fredoka">The Magic Stones & Treasure Game</h1>
-                <p class="text-[11px] sm:text-xs text-amber-800 font-medium">Drop magic stones between doors to sense where the golden chest is hidden!</p>
+            <h2 id="confirm-title" class="text-xl sm:text-2xl font-bold text-amber-950 font-fredoka">Open Door #1?</h2>
+            <p id="confirm-desc" class="text-xs sm:text-sm text-amber-800 font-medium my-3 leading-relaxed">
+                You still have <strong>4 Magic Stone(s)</strong> left! Using stones first gives you helpful direction hints.
+            </p>
+            <div class="flex gap-3 mt-4">
+                <button id="confirm-cancel-btn" class="flex-1 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm shadow active:scale-95 transition">
+                    Keep Searching
+                </button>
+                <button id="confirm-proceed-btn" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow active:scale-95 transition">
+                    Open Door
+                </button>
             </div>
         </div>
+    </div>
 
-        <!-- Tactile Reset Button -->
-        <button id="reset-btn" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-amber-100 border-2 border-amber-300 hover:bg-amber-200 text-amber-950 font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-1.5">
-            <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Reset Game
-        </button>
-    </header>
-
-    <!-- Magic Stone Inventory Vault -->
-    <section class="w-full max-w-7xl bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-2 sm:p-3 shadow-sm my-1 z-10">
-        <div class="flex items-center justify-between pb-1.5 border-b border-amber-200/60 px-1">
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-ping"></span>
-                <span class="text-xs sm:text-sm font-bold text-amber-900 tracking-wider font-fredoka uppercase">Magic Stone Pouch</span>
-                <span id="stone-counter" class="ml-1 px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-900 font-bold text-xs">
-                    Stones Available: 4 / 4
-                </span>
-            </div>
-            <span class="text-[11px] sm:text-xs text-amber-700 font-medium hidden sm:inline">Tap a stone, then select any slot between doors!</span>
-        </div>
-
-        <!-- Pedestal Inventory Items -->
-        <div id="inventory-container" class="flex items-center justify-center gap-3 sm:gap-6 mt-2">
-            <!-- Rendered via JS -->
-        </div>
-    </section>
-
-    <!-- Main Board Row (Ultra-compact margins, fitting all 16 doors) -->
-    <main class="w-full max-w-7xl my-auto py-1 relative z-10">
-        <!-- Spectral Energy Sweep Overlay Container -->
-        <div id="beam-overlay" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-hidden"></div>
-
-        <div class="bg-amber-100/70 border-2 border-amber-200 rounded-2xl shadow-inner p-1">
-            <div id="board-row" class="board-container">
-                <!-- 16 Doors and 15 Gap Slots rendered via JS -->
-            </div>
-        </div>
-    </main>
-
-    <!-- Bottom Oracle Guide Footer -->
-    <footer class="w-full max-w-7xl bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-2 sm:p-3 shadow-sm flex items-center gap-2 z-10">
-        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-200/80 text-amber-800 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </div>
-        <div class="flex-1 min-w-0">
-            <div id="oracle-message" class="text-xs sm:text-sm font-bold text-amber-950 transition-opacity duration-200 truncate">
-                Pick a Magic Stone and drop it between doors to discover the treasure's location!
-            </div>
-        </div>
-    </footer>
-
-    <!-- Victory Screen Modal -->
-    <div id="victory-modal" class="fixed inset-0 bg-amber-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden opacity-0 transition-opacity duration-300">
+    <!-- Modal 2: Victory Screen -->
+    <div id="victory-modal" class="fixed inset-0 bg-amber-950/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden opacity-0 transition-opacity duration-300">
         <div id="victory-card" class="bg-amber-50 border-4 border-amber-400 rounded-3xl p-5 sm:p-7 max-w-md w-full text-center shadow-2xl transform scale-95 transition-transform duration-300">
-            
-            <!-- Victory Asset Container (Trophy & Pile of Gold) -->
             <div id="victory-asset-container" class="w-48 h-36 mx-auto flex items-center justify-center">
-                <!-- Rendered by JS -->
+                <!-- Trophy & Gold SVG -->
             </div>
-
             <h2 class="text-2xl sm:text-3xl font-bold text-amber-950 font-fredoka mt-1">TREASURE DISCOVERED!</h2>
-            <p class="text-xs sm:text-sm text-amber-800 font-medium mt-0.5">You found the golden chest behind the magic door!</p>
-            
+            <p class="text-xs sm:text-sm text-amber-800 font-medium mt-0.5">You opened the magic door hiding the secret golden chest!</p>
+
             <div class="my-4 p-3 rounded-2xl bg-amber-100/80 border border-amber-300 flex items-center justify-around">
                 <div class="text-center">
                     <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Stones Used</div>
@@ -284,14 +319,10 @@
     </div>
 
     <script>
-        /**
-         * GAME_CONFIG
-         * Centralized game parameters object.
-         */
         const GAME_CONFIG = {
             totalDoors: 16,
             totalStones: 4,
-            sfxVolume: 0.28
+            sfxVolume: 0.35
         };
 
         /**
@@ -310,18 +341,16 @@
                 }
             },
 
-            // Crystal Ping on stone selection
             playStoneSelect() {
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, now); // A5
-                osc.frequency.exponentialRampToValueAtTime(1760, now + 0.14); // A6
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(1760, now + 0.14);
 
                 gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.6, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
@@ -332,80 +361,61 @@
                 osc.stop(now + 0.16);
             },
 
-            // Deep stone socket drop & chime
             playStoneDrop() {
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
 
-                // Deep warm stone thud
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(240, now);
+                osc.frequency.setValueAtTime(260, now);
                 osc.frequency.exponentialRampToValueAtTime(70, now + 0.22);
 
-                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.9, now);
+                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.8, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
                 osc.stop(now + 0.22);
-
-                // High crystal lock tone
-                const chime = this.ctx.createOscillator();
-                const chimeGain = this.ctx.createGain();
-                chime.type = 'sine';
-                chime.frequency.setValueAtTime(1318.51, now + 0.02); // E6
-                chimeGain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.45, now + 0.02);
-                chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-
-                chime.connect(chimeGain);
-                chimeGain.connect(this.ctx.destination);
-                chime.start(now + 0.02);
-                chime.stop(now + 0.28);
             },
 
-            // Directional Panned Energy Sweep
-            playSpectralSweep(direction) {
+            playLightningZap() {
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
 
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(direction === 'LEFT' ? 1100 : 350, now);
-                osc.frequency.exponentialRampToValueAtTime(direction === 'LEFT' ? 350 : 1100, now + 0.45);
-
-                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.5, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
-
-                if (this.ctx.createStereoPanner) {
-                    const panner = this.ctx.createStereoPanner();
-                    panner.pan.setValueAtTime(direction === 'LEFT' ? 0.75 : -0.75, now);
-                    panner.pan.linearRampToValueAtTime(direction === 'LEFT' ? -0.75 : 0.75, now + 0.48);
-
-                    osc.connect(gain);
-                    gain.connect(panner);
-                    panner.connect(this.ctx.destination);
-                } else {
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
+                const bufferSize = this.ctx.sampleRate * 0.25;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
                 }
 
-                osc.start(now);
-                osc.stop(now + 0.48);
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(3200, now);
+                filter.Q.setValueAtTime(3, now);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.7, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start(now);
+                noise.stop(now + 0.25);
             },
 
-            // Wood door slide effect
             playDoorSlide() {
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -423,17 +433,15 @@
                 osc.stop(now + 0.32);
             },
 
-            // Empty alcove soft thud
             playEmptyThud() {
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(130, now);
+                osc.frequency.setValueAtTime(120, now);
                 osc.frequency.exponentialRampToValueAtTime(45, now + 0.22);
 
                 gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.7, now);
@@ -445,13 +453,11 @@
                 osc.stop(now + 0.22);
             },
 
-            // Victory Fanfare
             playVictoryFanfare() {
                 this.init();
                 if (!this.ctx) return;
-
                 const now = this.ctx.currentTime;
-                const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
+                const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
 
                 notes.forEach((freq, idx) => {
                     const osc = this.ctx.createOscillator();
@@ -474,7 +480,7 @@
         };
 
         /**
-         * Game State Controller
+         * Game State Management
          */
         const Game = {
             treasureDoor: 1,
@@ -483,6 +489,7 @@
             placedStones: {}, // { gapIndex: 'LEFT' | 'RIGHT' }
             openDoors: new Set(),
             isGameOver: false,
+            pendingDoorToOpen: null,
 
             init() {
                 this.resetGame();
@@ -496,11 +503,13 @@
                 this.placedStones = {};
                 this.openDoors.clear();
                 this.isGameOver = false;
+                this.pendingDoorToOpen = null;
 
                 RenderEngine.renderInventory();
                 RenderEngine.renderBoard();
-                RenderEngine.updateOracle("Pick a Magic Stone and drop it between doors to discover the treasure's location!");
+                RenderEngine.updateOracle("Select or drag a Magic Stone into a socket between doors to locate the treasure!");
                 RenderEngine.hideVictoryModal();
+                RenderEngine.hideConfirmModal();
             },
 
             selectStone(index) {
@@ -513,14 +522,14 @@
                     this.selectedStoneIndex = index;
                 }
                 RenderEngine.renderInventory();
-                RenderEngine.highlightActiveSlots(this.selectedStoneIndex !== null);
+                RenderEngine.highlightActiveSockets(this.selectedStoneIndex !== null);
             },
 
             placeStoneInGap(gapIndex) {
                 if (this.isGameOver) return;
 
                 if (this.placedStones[gapIndex]) {
-                    RenderEngine.updateOracle(`A stone is already placed between Door ${gapIndex} & ${gapIndex + 1}!`);
+                    RenderEngine.updateOracle(`A stone is already lodged in the socket between Door ${gapIndex} & ${gapIndex + 1}!`);
                     return;
                 }
 
@@ -528,15 +537,11 @@
                     if (this.stonesRemaining > 0) {
                         this.selectedStoneIndex = GAME_CONFIG.totalStones - this.stonesRemaining;
                     } else {
-                        RenderEngine.updateOracle("All 4 stones are placed! Click on any door to open it.");
+                        RenderEngine.updateOracle("All 4 stones have been placed! Open a door to check for treasure.");
                         return;
                     }
                 }
 
-                // Determine Direction Logic
-                // Gap k sits between Door k and Door k+1
-                // If treasure <= k => LEFT
-                // If treasure >= k+1 => RIGHT
                 const direction = (this.treasureDoor <= gapIndex) ? 'LEFT' : 'RIGHT';
 
                 this.placedStones[gapIndex] = direction;
@@ -544,22 +549,39 @@
                 this.selectedStoneIndex = null;
 
                 AudioEngine.playStoneDrop();
-                AudioEngine.playSpectralSweep(direction);
+                AudioEngine.playLightningZap();
 
                 RenderEngine.renderInventory();
                 RenderEngine.renderBoard();
 
-                // Direct Animations: Directional Shimmer Wave + Spectral Beam (NO text banner!)
-                RenderEngine.triggerShimmerWave(gapIndex, direction);
-                RenderEngine.triggerBeamOverlay(gapIndex, direction);
+                RenderEngine.triggerLightningBolt(gapIndex, direction);
+                RenderEngine.triggerDoorShimmerSequence(gapIndex, direction);
 
-                RenderEngine.updateOracle(`Stone placed between Door ${gapIndex} & ${gapIndex + 1}. Check the glowing arrow!`);
+                RenderEngine.updateOracle(`Stone activated between Door ${gapIndex} & ${gapIndex + 1}! Check the internal arrow.`);
             },
 
-            openDoor(doorNum) {
+            attemptOpenDoor(doorNum) {
                 if (this.isGameOver) return;
                 if (this.openDoors.has(doorNum)) return;
 
+                if (this.stonesRemaining > 0) {
+                    this.pendingDoorToOpen = doorNum;
+                    RenderEngine.showConfirmModal(doorNum, this.stonesRemaining);
+                } else {
+                    this.executeOpenDoor(doorNum);
+                }
+            },
+
+            confirmOpenDoor() {
+                if (this.pendingDoorToOpen !== null) {
+                    const num = this.pendingDoorToOpen;
+                    this.pendingDoorToOpen = null;
+                    RenderEngine.hideConfirmModal();
+                    this.executeOpenDoor(num);
+                }
+            },
+
+            executeOpenDoor(doorNum) {
                 this.openDoors.add(doorNum);
                 AudioEngine.playDoorSlide();
 
@@ -577,7 +599,7 @@
                     }, 500);
                 } else {
                     AudioEngine.playEmptyThud();
-                    RenderEngine.updateOracle(`Door ${doorNum} is empty! Use your remaining stone clues.`);
+                    RenderEngine.updateOracle(`Door ${doorNum} is empty! Use remaining magic stones or open another door.`);
                 }
             },
 
@@ -592,6 +614,16 @@
                     this.resetGame();
                 });
 
+                document.getElementById('confirm-proceed-btn').addEventListener('click', () => {
+                    this.confirmOpenDoor();
+                });
+
+                document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+                    AudioEngine.playStoneSelect();
+                    RenderEngine.hideConfirmModal();
+                    this.pendingDoorToOpen = null;
+                });
+
                 const unlockAudio = () => {
                     AudioEngine.init();
                     document.removeEventListener('click', unlockAudio);
@@ -603,7 +635,7 @@
         };
 
         /**
-         * Render Engine & SVG Asset Builders
+         * Render Engine for UI & Graphics
          */
         const RenderEngine = {
 
@@ -611,7 +643,7 @@
                 const container = document.getElementById('inventory-container');
                 const counter = document.getElementById('stone-counter');
 
-                counter.innerText = `Stones Available: ${Game.stonesRemaining} / ${GAME_CONFIG.totalStones}`;
+                counter.innerText = `Stones Left: ${Game.stonesRemaining} / ${GAME_CONFIG.totalStones}`;
                 container.innerHTML = '';
 
                 for (let i = 0; i < GAME_CONFIG.totalStones; i++) {
@@ -621,25 +653,26 @@
                     const slot = document.createElement('div');
                     slot.className = `relative w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center transition-all duration-200 ${
                         isUsed 
-                            ? 'bg-amber-100/50 border border-amber-200 opacity-40' 
+                            ? 'bg-amber-100/40 border border-amber-200 opacity-30' 
                             : isSelected 
                                 ? 'bg-amber-100 border-2 border-amber-500 shadow-md scale-110 ring-2 ring-amber-300' 
-                                : 'bg-amber-100/80 border-2 border-amber-300 hover:border-amber-500 cursor-pointer hover:scale-105'
+                                : 'bg-amber-100/90 border-2 border-amber-300 hover:border-amber-500 cursor-pointer hover:scale-105'
                     }`;
 
                     if (!isUsed) {
+                        slot.setAttribute('draggable', 'true');
+                        slot.addEventListener('dragstart', (e) => {
+                            Game.selectStone(i);
+                            e.dataTransfer.setData('text/plain', i);
+                        });
                         slot.addEventListener('click', () => Game.selectStone(i));
                         slot.innerHTML = `
-                            <div class="stone-float w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                            <div class="stone-float w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center pointer-events-none">
                                 ${this.getUnusedStoneSVG(isSelected)}
                             </div>
                         `;
                     } else {
-                        slot.innerHTML = `
-                            <div class="w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center text-amber-700 text-xs font-bold">
-                                ✓
-                            </div>
-                        `;
+                        slot.innerHTML = `<div class="text-amber-700 font-bold text-xs">✓</div>`;
                     }
 
                     container.appendChild(slot);
@@ -654,19 +687,17 @@
                     const isOpen = Game.openDoors.has(i);
                     const isTreasure = (i === Game.treasureDoor);
 
-                    // Door Card Container
+                    // Door Card Component
                     const doorCard = document.createElement('div');
                     doorCard.id = `door-card-${i}`;
                     doorCard.className = `door-card ${isOpen ? 'is-open' : ''}`;
 
-                    // Niche Underneath Door Panel
                     const doorBack = document.createElement('div');
-                    doorBack.className = 'absolute inset-0 z-10 flex items-center justify-center p-0.5 bg-amber-200/60 border border-amber-300/80 rounded-lg';
+                    doorBack.className = 'absolute inset-0 z-10 flex items-center justify-center p-0.5 bg-amber-200/80 border border-amber-300/80';
                     doorBack.innerHTML = isOpen 
                         ? (isTreasure ? this.getOpenTreasureDoorSVG() : this.getEmptyDoorSVG())
                         : `<div id="niche-${i}" class="w-full h-full flex items-center justify-center"></div>`;
 
-                    // Door Front Panel (Smooth Vertical Slide)
                     const doorPanel = document.createElement('div');
                     doorPanel.className = 'door-panel-slide';
                     doorPanel.innerHTML = this.getClosedDoorSVG(i);
@@ -674,85 +705,152 @@
                     doorCard.appendChild(doorBack);
                     doorCard.appendChild(doorPanel);
 
-                    doorPanel.addEventListener('click', () => Game.openDoor(i));
+                    doorPanel.addEventListener('click', () => Game.attemptOpenDoor(i));
                     board.appendChild(doorCard);
 
-                    // Gap Slot ("Between the Doors")
+                    // EXTREMELY CLEAR INTERACTION SOCKET BETWEEN DOORS
                     if (i < GAME_CONFIG.totalDoors) {
                         const gapIndex = i;
                         const placedDirection = Game.placedStones[gapIndex];
 
-                        const gapDiv = document.createElement('div');
-                        gapDiv.id = `gap-slot-${gapIndex}`;
-                        gapDiv.title = `Position between Door ${gapIndex} & Door ${gapIndex + 1}`;
-                        gapDiv.className = `gap-slot ${
-                            placedDirection 
-                                ? 'bg-transparent' 
-                                : 'bg-amber-100/90 border border-amber-300 hover:border-amber-500 cursor-pointer hover:bg-amber-200'
-                        }`;
+                        const gapHitbox = document.createElement('div');
+                        gapHitbox.id = `gap-socket-${gapIndex}`;
+                        gapHitbox.className = 'gap-socket-hitbox';
+                        gapHitbox.title = `Magic Socket between Door ${gapIndex} & ${gapIndex + 1}`;
+
+                        // Drag & Drop event listeners
+                        gapHitbox.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            this.highlightActiveSockets(true);
+                        });
+
+                        gapHitbox.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            Game.placeStoneInGap(gapIndex);
+                        });
 
                         if (placedDirection) {
-                            gapDiv.innerHTML = this.getStoneWithArrowSVG(placedDirection);
-                        } else {
-                            gapDiv.innerHTML = `
-                                <div class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400"></div>
+                            gapHitbox.innerHTML = `
+                                <div class="w-full h-10 sm:h-12 flex items-center justify-center drop-shadow-md">
+                                    ${this.getStoneWithArrowSVG(placedDirection)}
+                                </div>
                             `;
-                            gapDiv.addEventListener('click', () => Game.placeStoneInGap(gapIndex));
-                        }
-
-                        board.appendChild(gapDiv);
-                    }
-                }
-            },
-
-            highlightActiveSlots(isActive) {
-                for (let i = 1; i < GAME_CONFIG.totalDoors; i++) {
-                    const slot = document.getElementById(`gap-slot-${i}`);
-                    if (slot && !Game.placedStones[i]) {
-                        if (isActive) {
-                            slot.classList.add('slot-target-active');
                         } else {
-                            slot.classList.remove('slot-target-active');
+                            gapHitbox.innerHTML = `
+                                <div class="socket-pedestal">
+                                    <svg class="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                </div>
+                            `;
+                            gapHitbox.addEventListener('click', () => Game.placeStoneInGap(gapIndex));
+                        }
+
+                        board.appendChild(gapHitbox);
+                    }
+                }
+            },
+
+            highlightActiveSockets(isActive) {
+                for (let i = 1; i < GAME_CONFIG.totalDoors; i++) {
+                    const socketBox = document.getElementById(`gap-socket-${i}`);
+                    if (socketBox && !Game.placedStones[i]) {
+                        const pedestal = socketBox.querySelector('.socket-pedestal');
+                        if (pedestal) {
+                            if (isActive) {
+                                pedestal.classList.add('is-active-target');
+                            } else {
+                                pedestal.classList.remove('is-active-target');
+                            }
                         }
                     }
                 }
             },
 
-            // Trigger brief light shimmer wave across target doors
-            triggerShimmerWave(gapIndex, direction) {
-                const start = direction === 'LEFT' ? 1 : gapIndex + 1;
-                const end = direction === 'LEFT' ? gapIndex : GAME_CONFIG.totalDoors;
+            triggerLightningBolt(gapIndex, direction) {
+                const canvas = document.getElementById('lightning-canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
 
-                for (let i = start; i <= end; i++) {
-                    const card = document.getElementById(`door-card-${i}`);
-                    if (card) {
-                        card.classList.remove('shimmer-active');
-                        void card.offsetWidth; // Force reflow
-                        card.classList.add('shimmer-active');
-                        setTimeout(() => card.classList.remove('shimmer-active'), 900);
+                const socketBox = document.getElementById(`gap-socket-${gapIndex}`);
+                if (!socketBox) return;
+
+                const rect = socketBox.getBoundingClientRect();
+                const startX = rect.left + rect.width / 2;
+                const startY = rect.top + rect.height / 2;
+                const targetX = (direction === 'LEFT') ? 0 : window.innerWidth;
+
+                const points = [{ x: startX, y: startY }];
+                const segments = 16;
+                const dx = (targetX - startX) / segments;
+
+                for (let i = 1; i < segments; i++) {
+                    const px = startX + dx * i;
+                    const py = startY + (Math.random() - 0.5) * 36;
+                    points.push({ x: px, y: py });
+                }
+                points.push({ x: targetX, y: startY });
+
+                let startTime = performance.now();
+                const duration = 380;
+
+                function animateLightning(now) {
+                    const elapsed = now - startTime;
+                    const progress = elapsed / duration;
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    if (progress < 1) {
+                        const alpha = 1 - progress;
+
+                        // Outer Cyan Glow
+                        ctx.beginPath();
+                        ctx.moveTo(points[0].x, points[0].y);
+                        for (let p of points) ctx.lineTo(p.x, p.y);
+                        ctx.strokeStyle = `rgba(0, 242, 254, ${alpha * 0.95})`;
+                        ctx.lineWidth = 8;
+                        ctx.shadowColor = '#00F2FE';
+                        ctx.shadowBlur = 16;
+                        ctx.stroke();
+
+                        // Inner White Bolt Core
+                        ctx.beginPath();
+                        ctx.moveTo(points[0].x, points[0].y);
+                        for (let p of points) ctx.lineTo(p.x, p.y);
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.lineWidth = 3.5;
+                        ctx.stroke();
+
+                        requestAnimationFrame(animateLightning);
+                    } else {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
                     }
                 }
+                requestAnimationFrame(animateLightning);
             },
 
-            // Trigger animated spectral energy beam arrow overlay (Pure visual, no text banner!)
-            triggerBeamOverlay(gapIndex, direction) {
-                const overlay = document.getElementById('beam-overlay');
-                const isLeft = direction === 'LEFT';
+            triggerDoorShimmerSequence(gapIndex, direction) {
+                const isLeft = (direction === 'LEFT');
+                const doors = [];
 
-                overlay.innerHTML = `
-                    <div class="w-full h-6 sm:h-8 bg-gradient-to-r ${
-                        isLeft 
-                            ? 'from-sky-400 via-amber-400 to-transparent' 
-                            : 'from-transparent via-amber-400 to-sky-400'
-                    } opacity-85 rounded-full spectral-beam-sweep flex items-center justify-center">
-                        <div class="text-white text-base sm:text-xl font-bold tracking-widest drop-shadow">
-                            ${isLeft ? '⬅ ⬅ ⬅' : '➔ ➔ ➔'}
-                        </div>
-                    </div>
-                `;
-                setTimeout(() => {
-                    overlay.innerHTML = '';
-                }, 800);
+                if (isLeft) {
+                    for (let i = gapIndex; i >= 1; i--) doors.push(i);
+                } else {
+                    for (let i = gapIndex + 1; i <= GAME_CONFIG.totalDoors; i++) doors.push(i);
+                }
+
+                doors.forEach((doorNum, step) => {
+                    setTimeout(() => {
+                        const card = document.getElementById(`door-card-${doorNum}`);
+                        if (card) {
+                            card.classList.remove('door-shimmer');
+                            void card.offsetWidth;
+                            card.classList.add('door-shimmer');
+                            setTimeout(() => card.classList.remove('door-shimmer'), 500);
+                        }
+                    }, step * 25);
+                });
             },
 
             slideOpenDoor(doorNum) {
@@ -771,11 +869,24 @@
 
             updateOracle(text) {
                 const msg = document.getElementById('oracle-message');
-                msg.style.opacity = '0';
-                setTimeout(() => {
-                    msg.innerText = text;
-                    msg.style.opacity = '1';
-                }, 150);
+                msg.innerText = text;
+            },
+
+            showConfirmModal(doorNum, stonesLeft) {
+                document.getElementById('confirm-title').innerText = `Open Door #${doorNum}?`;
+                document.getElementById('confirm-desc').innerHTML = `
+                    You still have <strong>${stonesLeft} Magic Stone(s)</strong> left!<br/>
+                    Using stones in gaps gives you direction clues.
+                `;
+                const modal = document.getElementById('confirm-modal');
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.remove('opacity-0'), 20);
+            },
+
+            hideConfirmModal() {
+                const modal = document.getElementById('confirm-modal');
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 200);
             },
 
             showVictoryModal(usedStones, doorsOpened) {
@@ -801,117 +912,81 @@
                 modal.classList.add('opacity-0');
                 card.classList.remove('scale-100');
                 card.classList.add('scale-95');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                }, 300);
+                setTimeout(() => modal.classList.add('hidden'), 300);
             },
 
-            // --- VECTOR SVG ARTWORK ---
-
-            // 1. Closed Carved Wood Door with Brass Badge
+            // Vector SVG Asset Generators
             getClosedDoorSVG(number) {
                 const numStr = number < 10 ? '0' + number : '' + number;
                 return `
-                    <svg class="w-full h-full" viewBox="0 0 100 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Door Outer Frame -->
-                        <rect x="2" y="2" width="96" height="176" rx="8" fill="#8B4513" stroke="#5C2C16" stroke-width="4"/>
-                        <!-- Inner Carved Panels -->
-                        <rect x="10" y="14" width="80" height="68" rx="5" fill="#A0522D" stroke="#5C2C16" stroke-width="2.5"/>
-                        <rect x="10" y="90" width="80" height="76" rx="5" fill="#A0522D" stroke="#5C2C16" stroke-width="2.5"/>
-                        <!-- Brass Handle Knob -->
-                        <circle cx="80" cy="108" r="6" fill="#FBBF24" stroke="#78350F" stroke-width="2"/>
-                        <circle cx="80" cy="108" r="2" fill="#78350F"/>
-                        <!-- Number Plaque Badge -->
-                        <rect x="26" y="24" width="48" height="26" rx="13" fill="#D97706" stroke="#FEF3C7" stroke-width="2"/>
-                        <text x="50" y="42" text-anchor="middle" fill="#FFFFFF" font-family="Fredoka, cursive, sans-serif" font-weight="700" font-size="16">${numStr}</text>
+                    <svg class="w-full h-full" viewBox="0 0 100 180" fill="none">
+                        <rect x="1" y="1" width="98" height="178" fill="#78350F" stroke="#4A2311" stroke-width="2"/>
+                        <rect x="8" y="12" width="84" height="70" rx="4" fill="#8B4513" stroke="#4A2311" stroke-width="2"/>
+                        <rect x="8" y="92" width="84" height="76" rx="4" fill="#8B4513" stroke="#4A2311" stroke-width="2"/>
+                        <circle cx="82" cy="110" r="5" fill="#FBBF24" stroke="#4A2311" stroke-width="1.5"/>
+                        <rect x="25" y="22" width="50" height="26" rx="13" fill="#D97706" stroke="#FEF3C7" stroke-width="2"/>
+                        <text x="50" y="40" text-anchor="middle" fill="#FFFFFF" font-family="Fredoka, cursive" font-weight="700" font-size="16">${numStr}</text>
                     </svg>
                 `;
             },
 
-            // 2. Open Door Revealing Golden Chest
             getOpenTreasureDoorSVG() {
                 return `
-                    <svg class="w-full h-full p-1" viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Chest Body -->
-                        <path d="M15,55 H85 V105 H15 Z" fill="#D97706" stroke="#78350F" stroke-width="3"/>
-                        <!-- Open Lid -->
-                        <path d="M10,28 C10,28 50,12 90,28 V55 H10 Z" fill="#FBBF24" stroke="#78350F" stroke-width="3"/>
-                        <!-- Overflowing Gold Coins -->
+                    <svg class="w-full h-full p-1" viewBox="0 0 100 130" fill="none">
+                        <path d="M15,55 H85 V105 H15 Z" fill="#D97706" stroke="#4A2311" stroke-width="3"/>
+                        <path d="M10,28 C10,28 50,12 90,28 V55 H10 Z" fill="#FBBF24" stroke="#4A2311" stroke-width="3"/>
                         <circle cx="35" cy="52" r="7" fill="#FEF3C7" stroke="#B45309" stroke-width="1.5"/>
                         <circle cx="50" cy="48" r="8" fill="#FEF3C7" stroke="#B45309" stroke-width="1.5"/>
                         <circle cx="65" cy="52" r="7" fill="#FEF3C7" stroke="#B45309" stroke-width="1.5"/>
-                        <!-- Lock Plate -->
-                        <circle cx="50" cy="78" r="6" fill="#FEF3C7" stroke="#78350F" stroke-width="2"/>
+                        <circle cx="50" cy="78" r="6" fill="#FEF3C7" stroke="#4A2311" stroke-width="2"/>
                     </svg>
                 `;
             },
 
-            // 3. Open Door Revealing Empty Dusty Niche
             getEmptyDoorSVG() {
                 return `
-                    <svg class="w-full h-full opacity-65" viewBox="0 0 100 130" fill="none">
-                        <rect x="18" y="30" width="64" height="70" rx="32" fill="#CBD5E1"/>
-                        <path d="M35,80 L65,80" stroke="#64748B" stroke-width="3" stroke-linecap="round"/>
-                        <text x="50" y="62" text-anchor="middle" fill="#64748B" font-family="Fredoka, cursive, sans-serif" font-weight="600" font-size="12">EMPTY</text>
+                    <svg class="w-full h-full opacity-60" viewBox="0 0 100 130" fill="none">
+                        <rect x="18" y="30" width="64" height="70" rx="32" fill="#94A3B8"/>
+                        <text x="50" y="66" text-anchor="middle" fill="#475569" font-family="Fredoka, cursive" font-weight="600" font-size="12">EMPTY</text>
                     </svg>
                 `;
             },
 
-            // 4. Unused Inventory Magic Stone Crystal
             getUnusedStoneSVG(isSelected) {
                 return `
                     <svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
-                        <polygon points="50,8 88,28 78,88 22,88 12,28" fill="#0284C7" stroke="${isSelected ? '#F59E0B' : '#38BDF8'}" stroke-width="${isSelected ? '6' : '3'}"/>
+                        <polygon points="50,8 88,28 78,88 22,88 12,28" fill="#0284C7" stroke="${isSelected ? '#F59E0B' : '#00F2FE'}" stroke-width="${isSelected ? '6' : '3'}"/>
                         <polygon points="50,8 50,88" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
                         <polygon points="12,28 88,28" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
                     </svg>
                 `;
             },
 
-            // 5. Placed Stone in Gap with Internal Illuminated Arrow
             getStoneWithArrowSVG(direction) {
-                const isLeft = direction === 'LEFT';
+                const isLeft = (direction === 'LEFT');
                 const arrowPath = isLeft 
                     ? "M66,50 L34,50 M48,34 L32,50 L48,66" 
                     : "M34,50 L66,50 M52,34 L68,50 L52,66";
 
                 return `
-                    <svg class="w-full h-full p-0.5" viewBox="0 0 100 100" fill="none">
-                        <!-- Crystal Body -->
-                        <polygon points="50,6 90,26 80,90 20,90 10,26" fill="#D97706" stroke="#78350F" stroke-width="3"/>
+                    <svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
+                        <polygon points="50,6 90,26 80,90 20,90 10,26" fill="#D97706" stroke="#4A2311" stroke-width="3"/>
                         <polygon points="50,6 50,90" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-                        <polygon points="10,26 90,26" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-                        
-                        <!-- Illuminated Arrow -->
                         <path d="${arrowPath}" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="${arrowPath}" stroke="#0F172A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 `;
             },
 
-            // 6. Victory Trophy + Giant Pile of Gold
             getVictoryTrophyAndGoldSVG() {
                 return `
                     <svg class="w-full h-full" viewBox="0 0 200 140" fill="none">
-                        <!-- Pile of Gold Coins -->
                         <ellipse cx="50" cy="115" rx="32" ry="14" fill="#D97706"/>
                         <ellipse cx="150" cy="115" rx="32" ry="14" fill="#D97706"/>
                         <ellipse cx="100" cy="122" rx="60" ry="16" fill="#F59E0B"/>
-                        <ellipse cx="70" cy="110" rx="35" ry="11" fill="#FBBF24"/>
-                        <ellipse cx="130" cy="110" rx="35" ry="11" fill="#FBBF24"/>
-
-                        <!-- Trophy Base -->
                         <rect x="75" y="88" width="50" height="16" rx="4" fill="#331E11"/>
                         <rect x="88" y="68" width="24" height="22" fill="#D97706"/>
-
-                        <!-- Trophy Handles -->
-                        <path d="M58,32 C38,32 38,62 65,62" stroke="#D97706" stroke-width="6" fill="none" stroke-linecap="round"/>
-                        <path d="M142,32 C162,32 162,62 135,62" stroke="#D97706" stroke-width="6" fill="none" stroke-linecap="round"/>
-
-                        <!-- Trophy Cup -->
                         <path d="M65,18 H135 L125,65 C125,80 115,82 100,82 C85,82 75,80 75,65 Z" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
-                        
-                        <!-- Star -->
                         <path d="M100,30 L103,38 L112,38 L105,43 L108,51 L100,46 L92,51 L95,43 L88,38 L97,38 Z" fill="#FFFFFF"/>
                     </svg>
                 `;

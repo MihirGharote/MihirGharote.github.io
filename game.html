@@ -1,1001 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Magic Stones & Treasure Game</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>The Magic Stones &amp; Treasure Game</title>
 
-    <!-- Google Fonts: Fredoka for cheerful fantasy typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- One friendly pixel font. If it can't load, the fallbacks below take over. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        parchment: '#FAF6EE',
-                        woodBorder: '#4A2311',
-                        goldAccent: '#D97706',
-                        goldGlow: '#FBBF24',
-                        magicCyan: '#00F2FE',
-                        magicTeal: '#0284C7'
-                    },
-                    fontFamily: {
-                        fredoka: ['Fredoka', 'cursive', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
+<style>
+/* =====================================================================
+   THE MAGIC STONES & TREASURE GAME  -  styles
+   All the textures (stone walls, doors, torches, stones...) are drawn
+   by game.js and handed to the CSS through the --*-url variables below.
+   ===================================================================== */
 
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            min-height: 100vh;
-            background-color: #FAF6EE;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.18) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(2, 132, 199, 0.15) 0%, transparent 40%);
-            color: #2D180C;
-            font-family: 'Fredoka', cursive, sans-serif;
-            overflow-x: hidden;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+:root {
+    /* ---- colour palette ---- */
+    --ink:        #0e0b14;   /* near-black outlines */
+    --wall-dark:  #1c1826;
+    --stone-hi:   #8d889c;
+    --stone-lo:   #3a3646;
+    --parchment:  #efe4c4;   /* carved text on stone */
+    --gold:       #ffd84a;
+    --gold-deep:  #c77a0d;
+    --magic:      #3ef0ff;
+    --magic-deep: #0a7ad1;
+    --torch:      #ff9a2e;
 
-        .game-wrapper {
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 100vh;
-        }
+    /* ---- sizing ---- */
+    --door-min:   46px;      /* narrowest a door may get before the hall scrolls sideways */
+    --gap-w:      clamp(34px, 3vw, 46px);
+    --px:         3px;       /* thickness of the chunky pixel borders */
 
-        /* Full edge-to-edge row container for all 16 doors & 15 sockets */
-        .board-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            gap: 0;
-            position: relative;
-        }
+    /* Filled in by game.js (door geometry + generated textures) */
+    --open-l: 11.5%;  --open-t: 17.6%;  --open-w: 76.9%;  --open-h: 76.5%;
+}
 
-        /* Door Card Styling & Responsive Slide Reveal */
-        .door-card {
-            flex: 1 1 0%;
-            min-width: 0;
-            position: relative;
-            aspect-ratio: 1 / 2.2;
-            max-height: 220px;
-            overflow: hidden;
-            background: #D7C9AA;
-            box-shadow: 0 4px 6px -1px rgba(74, 35, 17, 0.25);
-            border-radius: 4px;
-        }
+* { box-sizing: border-box; }
 
-        .door-panel-slide {
-            position: absolute;
-            inset: 0;
-            z-index: 20;
-            transition: transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1);
-            will-change: transform;
-            cursor: pointer;
-        }
+html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--wall-dark);
+    color: var(--parchment);
+    font-family: 'Pixelify Sans', 'Trebuchet MS', 'Verdana', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
 
-        .door-card.is-open .door-panel-slide {
-            transform: translateY(-100%);
-            pointer-events: none;
-        }
+/* Everything generated by game.js should stay crisp, never blurry */
+canvas, img.pixel { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
 
-        /* EXTREMELY CLEAR INTERACTION SOCKETS BETWEEN DOORS */
-        .gap-socket-hitbox {
-            flex: 0 0 18px;
-            margin: 0 -4px;
-            height: 100%;
-            max-height: 220px;
-            z-index: 35;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
+body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    position: relative;
+    background-color: var(--wall-dark);
+    background-image: var(--wall-url);
+    background-size: 192px 192px;
+    image-rendering: pixelated;
+}
 
-        @media (min-width: 640px) {
-            .gap-socket-hitbox {
-                flex: 0 0 26px;
-                margin: 0 -6px;
-            }
-        }
+/* Dark vignette + warm torch light on the wall */
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse at 8% 6%,  rgba(255,154,46,.30), transparent 38%),
+        radial-gradient(ellipse at 92% 6%, rgba(255,154,46,.30), transparent 38%),
+        radial-gradient(ellipse at 50% 55%, rgba(10,6,20,0) 25%, rgba(10,6,20,.78) 100%),
+        linear-gradient(rgba(10,6,20,.38), rgba(10,6,20,.38));
+    animation: torchLight .9s steps(3) infinite;
+}
+@keyframes torchLight { 0%,100% { opacity: 1; } 33% { opacity: .86; } 66% { opacity: .94; } }
 
-        /* Visible Glowing Socket Ring Pedestal */
-        .socket-pedestal {
-            width: 18px;
-            height: 18px;
-            border-radius: 9999px;
-            background: #FEF3C7;
-            border: 2px solid #D97706;
-            box-shadow: 0 0 6px rgba(217, 119, 6, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-        }
+/* =====================================================================
+   Layout
+   ===================================================================== */
+.game {
+    position: relative; z-index: 2;
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column;
+    gap: 14px;
+    padding: 12px 12px 16px;
+    max-width: 1700px; margin: 0 auto;
+}
+.game main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
 
-        @media (min-width: 640px) {
-            .socket-pedestal {
-                width: 24px;
-                height: 24px;
-                border-width: 2.5px;
-            }
-        }
+/* =====================================================================
+   Carved-stone panels (header plaque, pouch, message tablet, modals)
+   ===================================================================== */
+.tablet {
+    position: relative;
+    background-color: #5b566a;
+    background-image: var(--slab-url);
+    background-size: 128px 128px;
+    border: var(--px) solid var(--ink);
+    box-shadow:
+        inset var(--px) var(--px) 0 rgba(255,255,255,.22),
+        inset calc(var(--px) * -1) calc(var(--px) * -1) 0 rgba(0,0,0,.38),
+        0 6px 0 rgba(0,0,0,.5);
+}
+/* tiny iron rivets in the corners */
+.tablet::before, .tablet::after {
+    content: ''; position: absolute; width: 6px; height: 6px;
+    background: #aab2c5; box-shadow: 1px 1px 0 #1c1f2a, inset -1px -1px 0 #6b7388;
+    top: 7px;
+}
+.tablet::before { left: 7px; }
+.tablet::after  { right: 7px; }
 
-        /* Pulsing Socket Ring when Stone is selected or being dragged */
-        .socket-pedestal.is-active-target {
-            animation: socketPulse 0.9s infinite ease-in-out;
-            border-color: #00F2FE !important;
-            background: #E0F2FE !important;
-            box-shadow: 0 0 12px #00F2FE, 0 0 4px #0284C7;
-            transform: scale(1.25);
-        }
+.carved {  /* engraved lettering */
+    color: var(--parchment);
+    text-shadow: 0 2px 0 #1b1724, 0 0 10px rgba(255,230,160,.18);
+    letter-spacing: .04em;
+}
 
-        @keyframes socketPulse {
-            0%, 100% { transform: scale(1.15); box-shadow: 0 0 8px #00F2FE; }
-            50% { transform: scale(1.35); box-shadow: 0 0 16px #00F2FE, 0 0 24px #0284C7; }
-        }
+/* ---------- Header ---------- */
+.top { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.plaque {
+    flex: 0 1 auto;
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 22px;
+}
+.plaque .emblem { width: 54px; height: 54px; flex: none; position: relative; }
+.plaque .emblem canvas { width: 100%; height: 100%; }
+.plaque h1 { margin: 0; line-height: 1; font-weight: 700; font-size: clamp(20px, 3.4vw, 42px); }
+.plaque h1 small {
+    display: block; margin-top: 6px;
+    font-size: clamp(11px, 1.4vw, 16px); font-weight: 500;
+    color: #cdbf93; letter-spacing: .12em;
+}
+.top-buttons { display: flex; flex-direction: column; gap: 8px; }
 
-        .gap-socket-hitbox:hover .socket-pedestal {
-            transform: scale(1.2);
-            border-color: #0284C7;
-            background: #E0F2FE;
-        }
+.torch {
+    flex: none; width: 36px; height: 90px;
+    background-image: var(--torch-url);
+    background-size: 300% 100%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    animation: flame .48s step-end infinite;
+    filter: drop-shadow(0 0 14px rgba(255,150,40,.7));
+}
+@keyframes flame {
+    0%   { background-position: 0% 0; }
+    33%  { background-position: 50% 0; }
+    66%  { background-position: 100% 0; }
+}
 
-        /* Sequential Shimmer Wave across doors */
-        @keyframes doorShimmerGlow {
-            0% { filter: brightness(1); transform: translateY(0); }
-            40% { filter: brightness(1.4) contrast(1.25); box-shadow: 0 0 22px #00F2FE; transform: translateY(-4px); }
-            100% { filter: brightness(1); transform: translateY(0); }
-        }
+/* ---------- Stone buttons ---------- */
+.btn {
+    font: inherit; font-weight: 600; font-size: 16px;
+    color: var(--parchment); text-shadow: 0 2px 0 #1b1724;
+    background: #6a6578 var(--slab-url); background-size: 128px;
+    border: var(--px) solid var(--ink);
+    box-shadow: inset 3px 3px 0 rgba(255,255,255,.28), inset -3px -3px 0 rgba(0,0,0,.4), 0 4px 0 rgba(0,0,0,.55);
+    padding: 8px 16px; cursor: pointer; letter-spacing: .05em;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform .08s steps(2), filter .12s;
+}
+.btn:hover  { filter: brightness(1.2); }
+.btn:active { transform: translateY(3px); box-shadow: inset 3px 3px 0 rgba(255,255,255,.2), inset -3px -3px 0 rgba(0,0,0,.4), 0 1px 0 rgba(0,0,0,.55); }
+.btn:focus-visible, .door:focus-visible, .gap:focus-visible { outline: 3px dashed var(--magic); outline-offset: 3px; }
+.btn.gold { background-image: linear-gradient(rgba(255,168,28,.62), rgba(255,168,28,.62)), var(--slab-url); color: #fff3c4; }
+.btn.blue { background-image: linear-gradient(rgba(40,120,230,.62), rgba(40,120,230,.62)), var(--slab-url); color: #e3f6ff; }
+.btn.small { padding: 4px 12px; font-size: 14px; }
+.btn svg { width: 16px; height: 16px; shape-rendering: crispEdges; }
 
-        .door-shimmer {
-            animation: doorShimmerGlow 0.5s ease-out forwards;
-        }
+/* ---------- Stone pouch ---------- */
+.pouch {
+    display: flex; align-items: center; justify-content: center; gap: 22px;
+    padding: 10px 24px; margin: 0 auto;
+    flex-wrap: wrap;
+}
+.pouch-title { text-align: center; font-weight: 600; font-size: clamp(14px, 1.7vw, 20px); line-height: 1.15; }
+.pouch-title b { display: block; font-size: clamp(22px, 2.6vw, 30px); color: var(--magic); text-shadow: 0 2px 0 #06304a, 0 0 14px rgba(62,240,255,.6); }
+.slots { display: flex; gap: clamp(8px, 2vw, 22px); }
 
-        .stone-float {
-            animation: stoneFloat 2.5s infinite ease-in-out;
-        }
+.slot {
+    position: relative;
+    width: var(--slot); height: var(--slot);
+    --slot: clamp(54px, 7vw, 76px);
+    cursor: grab; touch-action: none;
+}
+.slot > canvas.indent { position: absolute; inset: 0; width: 100%; height: 100%; }
+.slot .stone-wrap {
+    position: absolute; inset: 0;
+    animation: bob 2.6s ease-in-out infinite;
+}
+.slot:nth-child(2) .stone-wrap { animation-delay: -.6s; }
+.slot:nth-child(3) .stone-wrap { animation-delay: -1.2s; }
+.slot:nth-child(4) .stone-wrap { animation-delay: -1.8s; }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.slot .stone-wrap canvas { width: 100%; height: 100%; position: relative; z-index: 1; }
+/* pulsing magic halo */
+.slot .stone-wrap::before, .ghost::before, .emblem::before {
+    content: ''; position: absolute; inset: -30%;
+    background: radial-gradient(circle, rgba(62,240,255,.55) 0%, rgba(62,240,255,.18) 40%, transparent 68%);
+    animation: halo 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes halo { 0%,100% { opacity: .55; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.08); } }
+.slot.selected .stone-wrap { transform: translateY(-9px) scale(1.14); animation: none; }
+.slot.selected .stone-wrap::before { opacity: 1; inset: -45%; }
+.slot:hover:not(.used) .stone-wrap { filter: brightness(1.2); }
+.slot.dragging .stone-wrap { opacity: .25; }
+.slot.used { cursor: default; }
+.slot.used .stone-wrap { display: none; }
+.slot.used::after {  /* a little dust in the empty slot */
+    content: ''; position: absolute; left: 30%; top: 55%; width: 4px; height: 4px; background: #9a95a8; box-shadow: 8px -4px 0 #7b768a, 14px 3px 0 #6b667a; opacity: .7;
+}
+.stones-left { font-weight: 600; font-size: clamp(14px, 1.6vw, 18px); color: #cdbf93; text-align: center; margin-top: 2px; }
 
-        @keyframes stoneFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3.5px); }
-        }
+/* ---------- The hall of doors ---------- */
+.hall {
+    position: relative;
+    background-color: #2a2636;
+    background-image: var(--wall-url);
+    background-size: 192px;
+    border: var(--px) solid var(--ink);
+    box-shadow: inset 0 0 0 var(--px) rgba(255,255,255,.06), inset 0 14px 40px rgba(0,0,0,.65), 0 6px 0 rgba(0,0,0,.5);
+}
+.hall::before { /* darkens the back wall so doors pop */
+    content: ''; position: absolute; inset: 0; background: rgba(8,5,16,.5); pointer-events: none; z-index: 0;
+}
+.hall-scroll { position: relative; z-index: 1; overflow-x: auto; overflow-y: hidden; padding: 40px 8px 0; scrollbar-color: #6a6578 #1c1826; }
+.board {
+    display: flex; align-items: flex-end;
+    min-width: calc(16 * var(--door-min) + 15 * var(--gap-w));
+}
+.hall-floor {
+    position: relative; z-index: 1; height: 18px;
+    background-color: #3a3646; background-image: var(--floor-url); background-size: 144px 72px;
+    border-top: var(--px) solid #0b0910;
+    box-shadow: inset 0 3px 0 rgba(255,255,255,.14);
+}
+.shake { animation: shake .26s steps(4); }
+@keyframes shake { 0% { transform: translate(0,0); } 25% { transform: translate(-4px,2px); } 50% { transform: translate(4px,-2px); } 75% { transform: translate(-2px,1px); } 100% { transform: translate(0,0); } }
 
-        /* Canvas overlay for electric lightning bolts */
-        #lightning-canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 45;
-        }
-    </style>
+.swipe-hint { display: none; text-align: center; font-size: 13px; color: #cdbf93; padding: 4px 0 0; }
+
+/* ---------- Doors ---------- */
+.door {
+    position: relative;
+    flex: 1 1 0; min-width: var(--door-min);
+    aspect-ratio: 26 / 68;
+    container-type: inline-size;
+    cursor: pointer;
+}
+.door > * { position: absolute; }
+.door .frame { inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+
+.door .room {
+    left: var(--open-l); top: var(--open-t); width: var(--open-w); height: var(--open-h);
+    z-index: 1; overflow: hidden; background: #06040a;
+}
+.door .room canvas { width: 100%; height: 100%; opacity: 0; }
+.door.open .room canvas { opacity: 1; transition: opacity .5s steps(5) .15s; }
+
+.door .leaves {
+    left: var(--open-l); top: var(--open-t); width: var(--open-w); height: var(--open-h);
+    z-index: 2; perspective: 260cqw; perspective-origin: 50% 40%;
+}
+.leaf {
+    position: absolute; top: 0; height: 100%; width: 50%;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    transition: transform .85s cubic-bezier(.35,.05,.2,1);
+}
+.leaf img { width: 100%; height: 100%; }
+.leaf.left  { left: 0;  transform-origin: left center; }
+.leaf.right { right: 0; transform-origin: right center; }
+.door.open .leaf.left  { transform: rotateY(80deg); }
+.door.open .leaf.right { transform: rotateY(-80deg); }
+.door.open { cursor: default; }
+
+.door:not(.open):hover .leaves { filter: brightness(1.22); }
+.door:not(.open):hover .leaf.left  { transform: rotateY(5deg); }
+.door:not(.open):hover .leaf.right { transform: rotateY(-5deg); }
+
+/* brass number plate, set into the stone above the arch */
+.door .number {
+    left: 15.4%; width: 69.2%; top: 3.2%; height: 11.2%;
+    z-index: 5; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #2a1704; line-height: 1;
+    font-size: clamp(11px, 2vw, 20px);
+    text-shadow: 0 1px 0 rgba(255,236,170,.55);
+    pointer-events: none;
+}
+@supports (font-size: 1cqw) { .door .number { font-size: 34cqw; } }
+
+/* wave of magic light running over the doors after a stone speaks */
+.door.glow { animation: doorGlow .6s ease-out; }
+@keyframes doorGlow {
+    0%   { filter: none; }
+    30%  { filter: brightness(1.7) saturate(1.4) drop-shadow(0 0 7px #3ef0ff) drop-shadow(0 0 14px #3ef0ff); transform: translateY(-5px); }
+    100% { filter: none; transform: translateY(0); }
+}
+.door.treasure {   /* the winning door pops forward and glows */
+    z-index: 8; transform-origin: 50% 100%;
+    animation: treasurePop .7s steps(7) forwards, treasureGlow 1s ease-in-out .7s infinite;
+}
+@keyframes treasurePop { 0% { transform: scale(1); } 60% { transform: scale(1.42); } 100% { transform: scale(1.26); } }
+.door.treasure::before {
+    content: ''; position: absolute; left: -100%; right: -100%; top: -12%; bottom: -4%; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 62%, rgba(255,216,74,.7), rgba(255,170,40,.22) 45%, transparent 70%);
+    animation: glowPulse 1s steps(4) infinite;
+}
+@keyframes glowPulse { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
+@keyframes treasureGlow {
+    0%,100% { filter: drop-shadow(0 0 6px #ffd84a); }
+    50%     { filter: drop-shadow(0 0 20px #ffd84a) brightness(1.15); }
+}
+.door.treasure .room::after {  /* spinning rays of light */
+    content: ''; position: absolute; inset: -60%; z-index: 2; pointer-events: none; mix-blend-mode: screen;
+    background: repeating-conic-gradient(from 0deg, rgba(255,230,120,.35) 0 10deg, transparent 10deg 30deg);
+    animation: spin 6s linear infinite; opacity: .8;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.door.rattle { animation: rattle .3s steps(4); }
+@keyframes rattle { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+/* ---------- The sockets between the doors ---------- */
+.gap {
+    position: relative;
+    flex: 0 0 var(--gap-w);
+    align-self: stretch;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 6;
+}
+/* a stone pillar between two doorways, with the socket carved into it */
+.gap::before {
+    content: ''; position: absolute; inset: 0; z-index: 0;
+    background: #5b566a var(--slab-url); background-size: 128px 128px;
+    box-shadow: inset 3px 0 0 rgba(255,255,255,.16), inset -3px 0 0 rgba(0,0,0,.4);
+}
+/* the socket is a little wider than the pillar so the arrow on the stone stays easy to read */
+.gap .socket { position: relative; z-index: 1; flex: none; width: calc(100% + 8px); aspect-ratio: 1; }
+.gap .socket canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.gap .socket .glow { opacity: 0; }
+.board.targeting .gap:not(.filled) .socket .glow { animation: socketPulse .8s steps(4) infinite; }
+.gap.hover:not(.filled) .socket .glow { animation: none; opacity: 1; }
+.gap.hover:not(.filled) .socket { transform: scale(1.18); transition: transform .1s steps(2); }
+@keyframes socketPulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+.gap.filled { cursor: default; }
+.gap .placed { position: absolute; inset: 0; width: 100%; height: 100%; }
+.gap .placed.energized { filter: drop-shadow(0 0 6px #3ef0ff) drop-shadow(0 0 12px #3ef0ff); }
+.gap .placed.settle { animation: settle .45s steps(5); }
+@keyframes settle { 0% { transform: scale(1.7); filter: brightness(2.4); } 100% { transform: scale(1); filter: none; } }
+.gap:not(.filled):hover .socket { filter: brightness(1.4); }
+
+.ghost {
+    position: fixed; left: 0; top: 0; z-index: 70; pointer-events: none;
+    will-change: transform;
+}
+.ghost canvas { width: 100%; height: 100%; position: relative; z-index: 1; }
+
+/* ---------- Wizard message tablet ---------- */
+.oracle { display: flex; align-items: center; gap: 14px; padding: 12px 22px; max-width: 980px; width: 100%; margin: 0 auto; min-height: 76px; }
+.oracle .orb { width: 44px; height: 44px; flex: none; position: relative; }
+.oracle .orb::before { content: ''; position: absolute; inset: -30%; background: radial-gradient(circle, rgba(62,240,255,.5), transparent 65%); animation: halo 1.5s ease-in-out infinite; }
+.oracle .orb canvas { width: 100%; height: 100%; position: relative; z-index: 1; }
+#oracle-message { font-weight: 500; font-size: clamp(15px, 1.9vw, 21px); line-height: 1.3; }
+.cursor-blink::after { content: '_'; animation: blink .6s steps(1) infinite; color: var(--magic); }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---------- Effects layers ---------- */
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; image-rendering: pixelated; }
+#flash { position: fixed; inset: 0; pointer-events: none; z-index: 41; background: radial-gradient(circle at var(--fx, 50%) var(--fy, 50%), rgba(190,255,255,.85), rgba(62,240,255,.25) 40%, transparent 70%); opacity: 0; }
+#flash.go { animation: flash .35s steps(5) forwards; }
+@keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+.pop-text {
+    position: fixed; z-index: 45; pointer-events: none; font-weight: 700; font-size: clamp(20px, 3vw, 34px);
+    color: #fff; text-shadow: 0 3px 0 #0a5a8a, 0 0 14px #3ef0ff, 0 0 4px #3ef0ff; white-space: nowrap;
+    transform: translate(-50%, -50%); animation: popText 1.3s steps(14) forwards;
+}
+@keyframes popText { 0% { opacity: 0; margin-top: 10px; scale: .5; } 15% { opacity: 1; scale: 1.2; } 70% { opacity: 1; margin-top: -40px; scale: 1; } 100% { opacity: 0; margin-top: -70px; } }
+
+/* ---------- Modals ---------- */
+.modal {
+    position: fixed; inset: 0; z-index: 60; display: none;
+    align-items: center; justify-content: center; padding: 16px;
+    background: rgba(6,3,12,.72);
+    opacity: 0; transition: opacity .2s;
+}
+.modal.show { display: flex; }
+.modal.visible { opacity: 1; }
+.modal .tablet { width: 100%; max-width: 460px; padding: 26px 24px 22px; text-align: center; transform: scale(.85) translateY(20px); transition: transform .28s steps(5); }
+.modal.visible .tablet { transform: none; }
+.modal h2 { margin: 6px 0 8px; font-size: clamp(24px, 4vw, 34px); line-height: 1.1; }
+.modal p { margin: 0 0 14px; font-size: 18px; line-height: 1.35; color: #e3d8b4; }
+.modal .row { display: flex; gap: 12px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.modal .row .btn { flex: 1; min-width: 130px; font-size: 18px; }
+.modal ul { text-align: left; font-size: 17px; line-height: 1.4; padding-left: 22px; margin: 0 0 6px; color: #e3d8b4; }
+.modal ul li { margin-bottom: 6px; }
+
+.victory .tablet { max-width: 520px; }
+.victory-art { position: relative; width: 190px; height: 190px; margin: -10px auto 0; }
+.victory-art::before {
+    content: ''; position: absolute; inset: -40px; mix-blend-mode: screen; opacity: .85;
+    background: repeating-conic-gradient(from 0deg, rgba(255,226,110,.45) 0 9deg, transparent 9deg 24deg);
+    -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 68%); mask-image: radial-gradient(circle, #000 25%, transparent 68%);
+    animation: spin 9s linear infinite;
+}
+.victory-art canvas { position: relative; width: 100%; height: 100%; animation: chestBounce 1.1s steps(6) infinite; }
+@keyframes chestBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.victory h2 { color: var(--gold); text-shadow: 0 3px 0 #6b3d00, 0 0 18px rgba(255,216,74,.7); }
+.stats { display: flex; justify-content: center; gap: 16px; margin: 6px 0 4px; }
+.stat { flex: 1; padding: 8px 6px; background: rgba(8,5,16,.55); border: 2px solid #0e0b14; box-shadow: inset 2px 2px 0 rgba(255,255,255,.08); }
+.stat span { display: block; font-size: 14px; color: #cdbf93; letter-spacing: .06em; }
+.stat b { font-size: 28px; color: var(--gold); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 820px) {
+    .torch { display: none; }
+    .top { flex-wrap: wrap; }
+    .plaque { padding: 8px 14px; gap: 10px; }
+    .plaque .emblem { width: 40px; height: 40px; }
+    .top-buttons { flex-direction: row; }
+    .swipe-hint { display: block; }
+    .game { padding: 8px 8px 12px; gap: 10px; }
+    .pouch { padding: 8px 12px; gap: 10px; flex-wrap: nowrap; }
+    .pouch-title { font-size: 12px; }
+    .pouch-title b { font-size: 17px; }
+    .stones-left { font-size: 13px; }
+    .slots { gap: 6px; }
+    .slot { --slot: 50px; }
+    .oracle { padding: 10px 14px; }
+    .oracle .orb { width: 34px; height: 34px; }
+}
+@media (max-width: 520px) { .plaque h1 small { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+}
+</style>
 </head>
-<body class="relative">
 
-    <!-- Electric Lightning Canvas -->
-    <canvas id="lightning-canvas"></canvas>
+<body>
+    <!-- Effects canvas (lightning, sparks, coins...) + screen flash -->
+    <canvas id="fx"></canvas>
+    <div id="flash"></div>
 
-    <div class="game-wrapper">
-        <!-- Header & Logo Emblem -->
-        <header class="w-full px-2 sm:px-4 pt-2 pb-1 flex items-center justify-between gap-2 z-10">
-            <div class="flex items-center gap-2 bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border-2 border-amber-400/80 rounded-2xl p-1.5 sm:p-2 shadow-md">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-0.5 shadow-md shrink-0 flex items-center justify-center">
-                    <svg class="w-full h-full drop-shadow" viewBox="0 0 100 100" fill="none">
-                        <polygon points="50,10 85,30 75,85 25,85 15,30" fill="#0284C7" stroke="#00F2FE" stroke-width="3"/>
-                        <path d="M30,55 H70 V80 H30 Z" fill="#FBBF24" stroke="#78350F" stroke-width="2"/>
-                        <circle cx="50" cy="40" r="10" fill="#FBBF24" stroke="#FFFFFF" stroke-width="2"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-base sm:text-2xl font-extrabold text-amber-950 tracking-wide leading-none font-fredoka drop-shadow-sm flex items-center gap-1">
-                        MAGIC STONES <span class="text-amber-600 font-black">&amp;</span> TREASURE
-                    </h1>
-                    <p class="text-[10px] sm:text-xs text-amber-800 font-semibold mt-0.5">Drop stones into gaps between doors to unleash lightning clues!</p>
-                </div>
+    <div class="game">
+
+        <!-- ================= Header ================= -->
+        <header class="top">
+            <div class="torch"></div>
+            <div class="tablet plaque">
+                <div class="emblem"><canvas id="emblem-stone" width="28" height="28"></canvas></div>
+                <h1 class="carved">MAGIC STONES &amp; TREASURE<small>Find the treasure behind the doors!</small></h1>
             </div>
-
-            <button id="reset-btn" class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-b from-amber-200 to-amber-300 hover:from-amber-300 hover:to-amber-400 border-2 border-amber-500 text-amber-950 font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-1.5 shrink-0">
-                <svg class="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Reset Game
-            </button>
+            <div class="top-buttons">
+                <button class="btn small" id="help-btn" title="How to play">? How to play</button>
+                <button class="btn small" id="mute-btn" title="Sound on/off">Sound: on</button>
+                <button class="btn small" id="reset-btn" title="Start a new game">New game</button>
+            </div>
+            <div class="torch"></div>
         </header>
 
-        <!-- Magic Stone Inventory Pouch -->
-        <section class="w-full px-2 sm:px-4 py-1.5 z-10">
-            <div class="bg-amber-100/90 border-2 border-amber-300 rounded-2xl p-2 shadow-sm">
-                <div class="flex items-center justify-between px-2 pb-1 border-b border-amber-200">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
-                        <span class="text-xs sm:text-sm font-bold text-amber-950 uppercase font-fredoka tracking-wider">Magic Stone Pouch</span>
-                        <span id="stone-counter" class="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-xs">
-                            Stones Left: 4 / 4
-                        </span>
-                    </div>
-                    <span class="text-[11px] sm:text-xs text-amber-800 font-medium hidden sm:inline">Click or Drag a stone to any glowing gap socket!</span>
+        <main>
+            <!-- ================= Magic stone pouch ================= -->
+            <section class="tablet pouch" aria-label="Your magic stones">
+                <div>
+                    <div class="pouch-title carved">YOUR<b>MAGIC STONES</b></div>
+                    <div class="stones-left" id="stone-counter">4 stones left</div>
                 </div>
+                <div class="slots" id="inventory-container"><!-- stones are built by game.js --></div>
+            </section>
 
-                <div id="inventory-container" class="flex items-center justify-center gap-3 sm:gap-6 mt-1.5">
-                    <!-- Dynamic Stone Slots -->
+            <!-- ================= The hall of 16 doors ================= -->
+            <section class="hall" id="hall" aria-label="Sixteen doors">
+                <div class="hall-scroll" id="hall-scroll">
+                    <div class="board" id="board-row"><!-- doors + sockets are built by game.js --></div>
                 </div>
-            </div>
-        </section>
+                <div class="hall-floor"></div>
+            </section>
+            <div class="swipe-hint">&larr; swipe the hall sideways &rarr;</div>
 
-        <!-- Main Edge-to-Edge Board Row -->
-        <main class="w-full my-auto py-2 relative z-10">
-            <div id="board-row" class="board-container">
-                <!-- 16 Doors and 15 Clear Socket Hitboxes rendered dynamically -->
-            </div>
+            <!-- ================= Message tablet ================= -->
+            <section class="tablet oracle" aria-live="polite">
+                <div class="orb"><canvas id="orb-stone" width="28" height="28"></canvas></div>
+                <div id="oracle-message" class="carved"></div>
+            </section>
         </main>
-
-        <!-- Bottom Guidance Bar -->
-        <footer class="w-full px-2 sm:px-4 py-2 z-10">
-            <div class="bg-amber-100/90 border-2 border-amber-300 rounded-2xl p-2.5 shadow-sm flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-amber-300 text-amber-900 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <div id="oracle-message" class="text-xs sm:text-sm font-bold text-amber-950 truncate flex-1">
-                    Select or drag a Magic Stone into a socket between doors to locate the treasure!
-                </div>
-            </div>
-        </footer>
     </div>
 
-    <!-- Modal 1: Early Door Opening Confirmation -->
-    <div id="confirm-modal" class="fixed inset-0 bg-amber-950/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden opacity-0 transition-opacity duration-200">
-        <div class="bg-amber-50 border-4 border-amber-400 rounded-3xl p-5 sm:p-6 max-w-md w-full text-center shadow-2xl transform scale-95 transition-transform duration-200">
-            <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-amber-800 mb-2">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <h2 id="confirm-title" class="text-xl sm:text-2xl font-bold text-amber-950 font-fredoka">Open Door #1?</h2>
-            <p id="confirm-desc" class="text-xs sm:text-sm text-amber-800 font-medium my-3 leading-relaxed">
-                You still have <strong>4 Magic Stone(s)</strong> left! Using stones first gives you helpful direction hints.
-            </p>
-            <div class="flex gap-3 mt-4">
-                <button id="confirm-cancel-btn" class="flex-1 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm shadow active:scale-95 transition">
-                    Keep Searching
-                </button>
-                <button id="confirm-proceed-btn" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow active:scale-95 transition">
-                    Open Door
-                </button>
+    <!-- ================= Modal: open a door early? ================= -->
+    <div class="modal" id="confirm-modal">
+        <div class="tablet">
+            <h2 class="carved" id="confirm-title">Open Door #1?</h2>
+            <p id="confirm-desc"></p>
+            <div class="row">
+                <button class="btn blue" id="confirm-cancel-btn">Keep searching</button>
+                <button class="btn gold" id="confirm-proceed-btn">Open it!</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal 2: Victory Screen -->
-    <div id="victory-modal" class="fixed inset-0 bg-amber-950/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden opacity-0 transition-opacity duration-300">
-        <div id="victory-card" class="bg-amber-50 border-4 border-amber-400 rounded-3xl p-5 sm:p-7 max-w-md w-full text-center shadow-2xl transform scale-95 transition-transform duration-300">
-            <div id="victory-asset-container" class="w-48 h-36 mx-auto flex items-center justify-center">
-                <!-- Trophy & Gold SVG -->
+    <!-- ================= Modal: victory ================= -->
+    <div class="modal victory" id="victory-modal">
+        <div class="tablet" id="victory-card">
+            <div class="victory-art" id="victory-asset-container"></div>
+            <h2 class="carved">TREASURE FOUND!</h2>
+            <p>You opened the right door and found the golden chest!</p>
+            <div class="stats">
+                <div class="stat"><span>Stones used</span><b id="stat-stones">0 / 4</b></div>
+                <div class="stat"><span>Doors opened</span><b id="stat-doors">1</b></div>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-bold text-amber-950 font-fredoka mt-1">TREASURE DISCOVERED!</h2>
-            <p class="text-xs sm:text-sm text-amber-800 font-medium mt-0.5">You opened the magic door hiding the secret golden chest!</p>
-
-            <div class="my-4 p-3 rounded-2xl bg-amber-100/80 border border-amber-300 flex items-center justify-around">
-                <div class="text-center">
-                    <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Stones Used</div>
-                    <div id="stat-stones" class="text-lg font-bold text-amber-900 font-fredoka">0 / 4</div>
-                </div>
-                <div class="w-px h-8 bg-amber-300"></div>
-                <div class="text-center">
-                    <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Doors Opened</div>
-                    <div id="stat-doors" class="text-lg font-bold text-amber-900 font-fredoka">1</div>
-                </div>
-            </div>
-
-            <button id="modal-reset-btn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-sm shadow-md active:scale-95 transition font-fredoka tracking-wide">
-                Play Again
-            </button>
+            <div class="row"><button class="btn gold" id="modal-reset-btn">Play again</button></div>
         </div>
     </div>
 
-    <script>
-        const GAME_CONFIG = {
-            totalDoors: 16,
-            totalStones: 4,
-            sfxVolume: 0.35
-        };
-
-        /**
-         * Web Audio API Synthesizer
-         */
-        const AudioEngine = {
-            ctx: null,
-
-            init() {
-                if (!this.ctx) {
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (AudioCtx) this.ctx = new AudioCtx();
-                }
-                if (this.ctx && this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
-            },
-
-            playStoneSelect() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, now);
-                osc.frequency.exponentialRampToValueAtTime(1760, now + 0.14);
-
-                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.6, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.16);
-            },
-
-            playStoneDrop() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(260, now);
-                osc.frequency.exponentialRampToValueAtTime(70, now + 0.22);
-
-                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.8, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.22);
-            },
-
-            playLightningZap() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-
-                const bufferSize = this.ctx.sampleRate * 0.25;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-
-                const filter = this.ctx.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(3200, now);
-                filter.Q.setValueAtTime(3, now);
-
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.7, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(this.ctx.destination);
-
-                noise.start(now);
-                noise.stop(now + 0.25);
-            },
-
-            playDoorSlide() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(180, now);
-                osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
-
-                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.5, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.32);
-            },
-
-            playEmptyThud() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(120, now);
-                osc.frequency.exponentialRampToValueAtTime(45, now + 0.22);
-
-                gain.gain.setValueAtTime(GAME_CONFIG.sfxVolume * 0.7, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.22);
-            },
-
-            playVictoryFanfare() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
-
-                notes.forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    const noteTime = now + (idx * 0.07);
-
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, noteTime);
-
-                    gain.gain.setValueAtTime(0, noteTime);
-                    gain.gain.linearRampToValueAtTime(GAME_CONFIG.sfxVolume * 0.75, noteTime + 0.03);
-                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.45);
-
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(noteTime);
-                    osc.stop(noteTime + 0.45);
-                });
-            }
-        };
-
-        /**
-         * Game State Management
-         */
-        const Game = {
-            treasureDoor: 1,
-            stonesRemaining: GAME_CONFIG.totalStones,
-            selectedStoneIndex: null,
-            placedStones: {}, // { gapIndex: 'LEFT' | 'RIGHT' }
-            openDoors: new Set(),
-            isGameOver: false,
-            pendingDoorToOpen: null,
-
-            init() {
-                this.resetGame();
-                this.bindEvents();
-            },
-
-            resetGame() {
-                this.treasureDoor = Math.floor(Math.random() * GAME_CONFIG.totalDoors) + 1;
-                this.stonesRemaining = GAME_CONFIG.totalStones;
-                this.selectedStoneIndex = null;
-                this.placedStones = {};
-                this.openDoors.clear();
-                this.isGameOver = false;
-                this.pendingDoorToOpen = null;
-
-                RenderEngine.renderInventory();
-                RenderEngine.renderBoard();
-                RenderEngine.updateOracle("Select or drag a Magic Stone into a socket between doors to locate the treasure!");
-                RenderEngine.hideVictoryModal();
-                RenderEngine.hideConfirmModal();
-            },
-
-            selectStone(index) {
-                if (this.isGameOver) return;
-                AudioEngine.playStoneSelect();
-
-                if (this.selectedStoneIndex === index) {
-                    this.selectedStoneIndex = null;
-                } else {
-                    this.selectedStoneIndex = index;
-                }
-                RenderEngine.renderInventory();
-                RenderEngine.highlightActiveSockets(this.selectedStoneIndex !== null);
-            },
-
-            placeStoneInGap(gapIndex) {
-                if (this.isGameOver) return;
-
-                if (this.placedStones[gapIndex]) {
-                    RenderEngine.updateOracle(`A stone is already lodged in the socket between Door ${gapIndex} & ${gapIndex + 1}!`);
-                    return;
-                }
-
-                if (this.selectedStoneIndex === null) {
-                    if (this.stonesRemaining > 0) {
-                        this.selectedStoneIndex = GAME_CONFIG.totalStones - this.stonesRemaining;
-                    } else {
-                        RenderEngine.updateOracle("All 4 stones have been placed! Open a door to check for treasure.");
-                        return;
-                    }
-                }
-
-                const direction = (this.treasureDoor <= gapIndex) ? 'LEFT' : 'RIGHT';
-
-                this.placedStones[gapIndex] = direction;
-                this.stonesRemaining--;
-                this.selectedStoneIndex = null;
-
-                AudioEngine.playStoneDrop();
-                AudioEngine.playLightningZap();
-
-                RenderEngine.renderInventory();
-                RenderEngine.renderBoard();
-
-                RenderEngine.triggerLightningBolt(gapIndex, direction);
-                RenderEngine.triggerDoorShimmerSequence(gapIndex, direction);
-
-                RenderEngine.updateOracle(`Stone activated between Door ${gapIndex} & ${gapIndex + 1}! Check the internal arrow.`);
-            },
-
-            attemptOpenDoor(doorNum) {
-                if (this.isGameOver) return;
-                if (this.openDoors.has(doorNum)) return;
-
-                if (this.stonesRemaining > 0) {
-                    this.pendingDoorToOpen = doorNum;
-                    RenderEngine.showConfirmModal(doorNum, this.stonesRemaining);
-                } else {
-                    this.executeOpenDoor(doorNum);
-                }
-            },
-
-            confirmOpenDoor() {
-                if (this.pendingDoorToOpen !== null) {
-                    const num = this.pendingDoorToOpen;
-                    this.pendingDoorToOpen = null;
-                    RenderEngine.hideConfirmModal();
-                    this.executeOpenDoor(num);
-                }
-            },
-
-            executeOpenDoor(doorNum) {
-                this.openDoors.add(doorNum);
-                AudioEngine.playDoorSlide();
-
-                RenderEngine.slideOpenDoor(doorNum);
-
-                if (doorNum === this.treasureDoor) {
-                    this.isGameOver = true;
-                    AudioEngine.playVictoryFanfare();
-
-                    const usedStones = GAME_CONFIG.totalStones - this.stonesRemaining;
-                    const openedCount = this.openDoors.size;
-
-                    setTimeout(() => {
-                        RenderEngine.showVictoryModal(usedStones, openedCount);
-                    }, 500);
-                } else {
-                    AudioEngine.playEmptyThud();
-                    RenderEngine.updateOracle(`Door ${doorNum} is empty! Use remaining magic stones or open another door.`);
-                }
-            },
-
-            bindEvents() {
-                document.getElementById('reset-btn').addEventListener('click', () => {
-                    AudioEngine.playStoneSelect();
-                    this.resetGame();
-                });
-
-                document.getElementById('modal-reset-btn').addEventListener('click', () => {
-                    AudioEngine.playStoneSelect();
-                    this.resetGame();
-                });
-
-                document.getElementById('confirm-proceed-btn').addEventListener('click', () => {
-                    this.confirmOpenDoor();
-                });
-
-                document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
-                    AudioEngine.playStoneSelect();
-                    RenderEngine.hideConfirmModal();
-                    this.pendingDoorToOpen = null;
-                });
-
-                const unlockAudio = () => {
-                    AudioEngine.init();
-                    document.removeEventListener('click', unlockAudio);
-                    document.removeEventListener('touchstart', unlockAudio);
-                };
-                document.addEventListener('click', unlockAudio);
-                document.addEventListener('touchstart', unlockAudio);
-            }
-        };
-
-        /**
-         * Render Engine for UI & Graphics
-         */
-        const RenderEngine = {
-
-            renderInventory() {
-                const container = document.getElementById('inventory-container');
-                const counter = document.getElementById('stone-counter');
-
-                counter.innerText = `Stones Left: ${Game.stonesRemaining} / ${GAME_CONFIG.totalStones}`;
-                container.innerHTML = '';
-
-                for (let i = 0; i < GAME_CONFIG.totalStones; i++) {
-                    const isUsed = i < (GAME_CONFIG.totalStones - Game.stonesRemaining);
-                    const isSelected = Game.selectedStoneIndex === i;
-
-                    const slot = document.createElement('div');
-                    slot.className = `relative w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center transition-all duration-200 ${
-                        isUsed 
-                            ? 'bg-amber-100/40 border border-amber-200 opacity-30' 
-                            : isSelected 
-                                ? 'bg-amber-100 border-2 border-amber-500 shadow-md scale-110 ring-2 ring-amber-300' 
-                                : 'bg-amber-100/90 border-2 border-amber-300 hover:border-amber-500 cursor-pointer hover:scale-105'
-                    }`;
-
-                    if (!isUsed) {
-                        slot.setAttribute('draggable', 'true');
-                        slot.addEventListener('dragstart', (e) => {
-                            Game.selectStone(i);
-                            e.dataTransfer.setData('text/plain', i);
-                        });
-                        slot.addEventListener('click', () => Game.selectStone(i));
-                        slot.innerHTML = `
-                            <div class="stone-float w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center pointer-events-none">
-                                ${this.getUnusedStoneSVG(isSelected)}
-                            </div>
-                        `;
-                    } else {
-                        slot.innerHTML = `<div class="text-amber-700 font-bold text-xs">✓</div>`;
-                    }
-
-                    container.appendChild(slot);
-                }
-            },
-
-            renderBoard() {
-                const board = document.getElementById('board-row');
-                board.innerHTML = '';
-
-                for (let i = 1; i <= GAME_CONFIG.totalDoors; i++) {
-                    const isOpen = Game.openDoors.has(i);
-                    const isTreasure = (i === Game.treasureDoor);
-
-                    // Door Card Component
-                    const doorCard = document.createElement('div');
-                    doorCard.id = `door-card-${i}`;
-                    doorCard.className = `door-card ${isOpen ? 'is-open' : ''}`;
-
-                    const doorBack = document.createElement('div');
-                    doorBack.className = 'absolute inset-0 z-10 flex items-center justify-center p-0.5 bg-amber-200/80 border border-amber-300/80';
-                    doorBack.innerHTML = isOpen 
-                        ? (isTreasure ? this.getOpenTreasureDoorSVG() : this.getEmptyDoorSVG())
-                        : `<div id="niche-${i}" class="w-full h-full flex items-center justify-center"></div>`;
-
-                    const doorPanel = document.createElement('div');
-                    doorPanel.className = 'door-panel-slide';
-                    doorPanel.innerHTML = this.getClosedDoorSVG(i);
-
-                    doorCard.appendChild(doorBack);
-                    doorCard.appendChild(doorPanel);
-
-                    doorPanel.addEventListener('click', () => Game.attemptOpenDoor(i));
-                    board.appendChild(doorCard);
-
-                    // EXTREMELY CLEAR INTERACTION SOCKET BETWEEN DOORS
-                    if (i < GAME_CONFIG.totalDoors) {
-                        const gapIndex = i;
-                        const placedDirection = Game.placedStones[gapIndex];
-
-                        const gapHitbox = document.createElement('div');
-                        gapHitbox.id = `gap-socket-${gapIndex}`;
-                        gapHitbox.className = 'gap-socket-hitbox';
-                        gapHitbox.title = `Magic Socket between Door ${gapIndex} & ${gapIndex + 1}`;
-
-                        // Drag & Drop event listeners
-                        gapHitbox.addEventListener('dragover', (e) => {
-                            e.preventDefault();
-                            this.highlightActiveSockets(true);
-                        });
-
-                        gapHitbox.addEventListener('drop', (e) => {
-                            e.preventDefault();
-                            Game.placeStoneInGap(gapIndex);
-                        });
-
-                        if (placedDirection) {
-                            gapHitbox.innerHTML = `
-                                <div class="w-full h-10 sm:h-12 flex items-center justify-center drop-shadow-md">
-                                    ${this.getStoneWithArrowSVG(placedDirection)}
-                                </div>
-                            `;
-                        } else {
-                            gapHitbox.innerHTML = `
-                                <div class="socket-pedestal">
-                                    <svg class="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
-                                    </svg>
-                                </div>
-                            `;
-                            gapHitbox.addEventListener('click', () => Game.placeStoneInGap(gapIndex));
-                        }
-
-                        board.appendChild(gapHitbox);
-                    }
-                }
-            },
-
-            highlightActiveSockets(isActive) {
-                for (let i = 1; i < GAME_CONFIG.totalDoors; i++) {
-                    const socketBox = document.getElementById(`gap-socket-${i}`);
-                    if (socketBox && !Game.placedStones[i]) {
-                        const pedestal = socketBox.querySelector('.socket-pedestal');
-                        if (pedestal) {
-                            if (isActive) {
-                                pedestal.classList.add('is-active-target');
-                            } else {
-                                pedestal.classList.remove('is-active-target');
-                            }
-                        }
-                    }
-                }
-            },
-
-            triggerLightningBolt(gapIndex, direction) {
-                const canvas = document.getElementById('lightning-canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-
-                const socketBox = document.getElementById(`gap-socket-${gapIndex}`);
-                if (!socketBox) return;
-
-                const rect = socketBox.getBoundingClientRect();
-                const startX = rect.left + rect.width / 2;
-                const startY = rect.top + rect.height / 2;
-                const targetX = (direction === 'LEFT') ? 0 : window.innerWidth;
-
-                const points = [{ x: startX, y: startY }];
-                const segments = 16;
-                const dx = (targetX - startX) / segments;
-
-                for (let i = 1; i < segments; i++) {
-                    const px = startX + dx * i;
-                    const py = startY + (Math.random() - 0.5) * 36;
-                    points.push({ x: px, y: py });
-                }
-                points.push({ x: targetX, y: startY });
-
-                let startTime = performance.now();
-                const duration = 380;
-
-                function animateLightning(now) {
-                    const elapsed = now - startTime;
-                    const progress = elapsed / duration;
-
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                    if (progress < 1) {
-                        const alpha = 1 - progress;
-
-                        // Outer Cyan Glow
-                        ctx.beginPath();
-                        ctx.moveTo(points[0].x, points[0].y);
-                        for (let p of points) ctx.lineTo(p.x, p.y);
-                        ctx.strokeStyle = `rgba(0, 242, 254, ${alpha * 0.95})`;
-                        ctx.lineWidth = 8;
-                        ctx.shadowColor = '#00F2FE';
-                        ctx.shadowBlur = 16;
-                        ctx.stroke();
-
-                        // Inner White Bolt Core
-                        ctx.beginPath();
-                        ctx.moveTo(points[0].x, points[0].y);
-                        for (let p of points) ctx.lineTo(p.x, p.y);
-                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-                        ctx.lineWidth = 3.5;
-                        ctx.stroke();
-
-                        requestAnimationFrame(animateLightning);
-                    } else {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    }
-                }
-                requestAnimationFrame(animateLightning);
-            },
-
-            triggerDoorShimmerSequence(gapIndex, direction) {
-                const isLeft = (direction === 'LEFT');
-                const doors = [];
-
-                if (isLeft) {
-                    for (let i = gapIndex; i >= 1; i--) doors.push(i);
-                } else {
-                    for (let i = gapIndex + 1; i <= GAME_CONFIG.totalDoors; i++) doors.push(i);
-                }
-
-                doors.forEach((doorNum, step) => {
-                    setTimeout(() => {
-                        const card = document.getElementById(`door-card-${doorNum}`);
-                        if (card) {
-                            card.classList.remove('door-shimmer');
-                            void card.offsetWidth;
-                            card.classList.add('door-shimmer');
-                            setTimeout(() => card.classList.remove('door-shimmer'), 500);
-                        }
-                    }, step * 25);
-                });
-            },
-
-            slideOpenDoor(doorNum) {
-                const card = document.getElementById(`door-card-${doorNum}`);
-                const niche = document.getElementById(`niche-${doorNum}`);
-                const isTreasure = (doorNum === Game.treasureDoor);
-
-                if (niche) {
-                    niche.innerHTML = isTreasure ? this.getOpenTreasureDoorSVG() : this.getEmptyDoorSVG();
-                }
-
-                if (card) {
-                    card.classList.add('is-open');
-                }
-            },
-
-            updateOracle(text) {
-                const msg = document.getElementById('oracle-message');
-                msg.innerText = text;
-            },
-
-            showConfirmModal(doorNum, stonesLeft) {
-                document.getElementById('confirm-title').innerText = `Open Door #${doorNum}?`;
-                document.getElementById('confirm-desc').innerHTML = `
-                    You still have <strong>${stonesLeft} Magic Stone(s)</strong> left!<br/>
-                    Using stones in gaps gives you direction clues.
-                `;
-                const modal = document.getElementById('confirm-modal');
-                modal.classList.remove('hidden');
-                setTimeout(() => modal.classList.remove('opacity-0'), 20);
-            },
-
-            hideConfirmModal() {
-                const modal = document.getElementById('confirm-modal');
-                modal.classList.add('opacity-0');
-                setTimeout(() => modal.classList.add('hidden'), 200);
-            },
-
-            showVictoryModal(usedStones, doorsOpened) {
-                const modal = document.getElementById('victory-modal');
-                const card = document.getElementById('victory-card');
-                const assetContainer = document.getElementById('victory-asset-container');
-
-                assetContainer.innerHTML = this.getVictoryTrophyAndGoldSVG();
-                document.getElementById('stat-stones').innerText = `${usedStones} / ${GAME_CONFIG.totalStones}`;
-                document.getElementById('stat-doors').innerText = `${doorsOpened}`;
-
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    card.classList.remove('scale-95');
-                    card.classList.add('scale-100');
-                }, 50);
-            },
-
-            hideVictoryModal() {
-                const modal = document.getElementById('victory-modal');
-                const card = document.getElementById('victory-card');
-                modal.classList.add('opacity-0');
-                card.classList.remove('scale-100');
-                card.classList.add('scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 300);
-            },
-
-            // Vector SVG Asset Generators
-            getClosedDoorSVG(number) {
-                const numStr = number < 10 ? '0' + number : '' + number;
-                return `
-                    <svg class="w-full h-full" viewBox="0 0 100 180" fill="none">
-                        <rect x="1" y="1" width="98" height="178" fill="#78350F" stroke="#4A2311" stroke-width="2"/>
-                        <rect x="8" y="12" width="84" height="70" rx="4" fill="#8B4513" stroke="#4A2311" stroke-width="2"/>
-                        <rect x="8" y="92" width="84" height="76" rx="4" fill="#8B4513" stroke="#4A2311" stroke-width="2"/>
-                        <circle cx="82" cy="110" r="5" fill="#FBBF24" stroke="#4A2311" stroke-width="1.5"/>
-                        <rect x="25" y="22" width="50" height="26" rx="13" fill="#D97706" stroke="#FEF3C7" stroke-width="2"/>
-                        <text x="50" y="40" text-anchor="middle" fill="#FFFFFF" font-family="Fredoka, cursive" font-weight="700" font-size="16">${numStr}</text>
-                    </svg>
-                `;
-            },
-
-            getOpenTreasureDoorSVG() {
-                return `
-                    <svg class="w-full h-full p-1" viewBox="0 0 100 130" fill="none">
-                        <path d="M15,55 H85 V105 H15 Z" fill="#D97706" stroke="#4A2311" stroke-width="3"/>
-                        <path d="M10,28 C10,28 50,12 90,28 V55 H10 Z" fill="#FBBF24" stroke="#4A2311" stroke-width="3"/>
-                        <circle cx="35" cy="52" r="7" fill="#FEF3C7" stroke="#B45309" stroke-width="1.5"/>
-                        <circle cx="50" cy="48" r="8" fill="#FEF3C7" stroke="#B45309" stroke-width="1.5"/>
-                        <circle cx="65" cy="52" r="7" fill="#FEF3C7" stroke="#B45309" stroke-width="1.5"/>
-                        <circle cx="50" cy="78" r="6" fill="#FEF3C7" stroke="#4A2311" stroke-width="2"/>
-                    </svg>
-                `;
-            },
-
-            getEmptyDoorSVG() {
-                return `
-                    <svg class="w-full h-full opacity-60" viewBox="0 0 100 130" fill="none">
-                        <rect x="18" y="30" width="64" height="70" rx="32" fill="#94A3B8"/>
-                        <text x="50" y="66" text-anchor="middle" fill="#475569" font-family="Fredoka, cursive" font-weight="600" font-size="12">EMPTY</text>
-                    </svg>
-                `;
-            },
-
-            getUnusedStoneSVG(isSelected) {
-                return `
-                    <svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
-                        <polygon points="50,8 88,28 78,88 22,88 12,28" fill="#0284C7" stroke="${isSelected ? '#F59E0B' : '#00F2FE'}" stroke-width="${isSelected ? '6' : '3'}"/>
-                        <polygon points="50,8 50,88" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
-                        <polygon points="12,28 88,28" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
-                    </svg>
-                `;
-            },
-
-            getStoneWithArrowSVG(direction) {
-                const isLeft = (direction === 'LEFT');
-                const arrowPath = isLeft 
-                    ? "M66,50 L34,50 M48,34 L32,50 L48,66" 
-                    : "M34,50 L66,50 M52,34 L68,50 L52,66";
-
-                return `
-                    <svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
-                        <polygon points="50,6 90,26 80,90 20,90 10,26" fill="#D97706" stroke="#4A2311" stroke-width="3"/>
-                        <polygon points="50,6 50,90" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-                        <path d="${arrowPath}" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="${arrowPath}" stroke="#0F172A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                `;
-            },
-
-            getVictoryTrophyAndGoldSVG() {
-                return `
-                    <svg class="w-full h-full" viewBox="0 0 200 140" fill="none">
-                        <ellipse cx="50" cy="115" rx="32" ry="14" fill="#D97706"/>
-                        <ellipse cx="150" cy="115" rx="32" ry="14" fill="#D97706"/>
-                        <ellipse cx="100" cy="122" rx="60" ry="16" fill="#F59E0B"/>
-                        <rect x="75" y="88" width="50" height="16" rx="4" fill="#331E11"/>
-                        <rect x="88" y="68" width="24" height="22" fill="#D97706"/>
-                        <path d="M65,18 H135 L125,65 C125,80 115,82 100,82 C85,82 75,80 75,65 Z" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
-                        <path d="M100,30 L103,38 L112,38 L105,43 L108,51 L100,46 L92,51 L95,43 L88,38 L97,38 Z" fill="#FFFFFF"/>
-                    </svg>
-                `;
-            }
-        };
-
-        window.addEventListener('DOMContentLoaded', () => {
-            Game.init();
-        });
-    </script>
+    <!-- ================= Modal: how to play ================= -->
+    <div class="modal" id="help-modal">
+        <div class="tablet">
+            <h2 class="carved">How to play</h2>
+            <ul>
+                <li>One of the 16 doors hides a treasure chest.</li>
+                <li>You have 4 magic stones. Drag a stone into a socket between two doors (or tap the stone, then tap a socket).</li>
+                <li>The stone always tells the truth: the treasure is to its <b>left</b> or to its <b>right</b>. Then it goes dark for good.</li>
+                <li>Tap a door to open it. Find the treasure!</li>
+            </ul>
+            <div class="row"><button class="btn gold" id="help-close-btn">Got it!</button></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
 </body>
 </html>

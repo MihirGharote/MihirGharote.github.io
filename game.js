@@ -45,73 +45,82 @@ function say(t, ms = 2600) {
   const m = $('#msg'); m.textContent = t; m.classList.add('show');
   clearTimeout(say.t); say.t = setTimeout(() => m.classList.remove('show'), ms);
 }
-const stoneHTML = t => `<div class="stone ${t} idle" data-type="${t}"><span></span></div>`;
+const arrowSVG = deg => `<svg class="arr" viewBox="-1 -1 9 9" style="transform:rotate(${deg}deg)"><path d="M3 0h1v1h1v1h1v1H4v4H3V3H1V2h1V1h1z" fill="#fff" stroke="#000" stroke-width=".7" paint-order="stroke"/></svg>`;
+const stoneHTML = t => `<div class="stone ${t} idle" data-type="${t}"><img src="assets/stone-${t}.svg" alt=""></div>`;
 
 /* ---------- Setup ---------- */
 function newGame() {
-  S = { t: { r: rnd(R), c: rnd(C) }, alive: Array.from({ length: R }, () => Array(C).fill(true)), sel: null, used: 0, over: false };
+  S = { alive: Array.from({ length: R }, () => Array(C).fill(true)), sel: null, used: 0, over: false };
   $('#end').className = ''; $('#end').innerHTML = ''; $('#fx').innerHTML = ''; $('#bolts').innerHTML = '';
   $('#msg').classList.remove('show');
   let left = '', doors = '', top = '';
   for (let r = 0; r < R; r++) {
     left += `<div class="cell"><b>F${R - r}</b>${r < R - 1 ? `<div class="socket red" data-type="red" data-i="${r}"></div>` : ''}</div>`;
     for (let c = 0; c < C; c++) {
-      const chest = S.t.r === r && S.t.c === c ? '<img src="assets/chest.svg" alt="">' : '';
+      const chest = '';
       doors += `<div class="door" data-r="${r}" data-c="${c}"><div class="back">${chest}</div><div class="leaf"><i></i></div></div>`;
     }
   }
   for (let c = 0; c < C; c++) top += `<div class="cell">${c < C - 1 ? `<div class="socket blue" data-type="blue" data-i="${c}"></div>` : ''}</div>`;
   $('#left').innerHTML = left; $('#doors').innerHTML = doors; $('#top').innerHTML = top;
+  requestAnimationFrame(floors);
   $('#reds').innerHTML = `<div>${stoneHTML('red')}</div><div>${stoneHTML('red')}</div>`;
   $('#blues').innerHTML = `<div>${stoneHTML('blue')}</div><div>${stoneHTML('blue')}</div><div>${stoneHTML('blue')}</div>`;
 }
 
 /* ---------- Stones ---------- */
-function clearSel() { S.sel = null; $$('.sel,.ready').forEach(x => x.classList.remove('sel', 'ready')); }
+function clearSel() { S.sel = null; $('#board').className = ''; $$('.sel,.ready').forEach(x => x.classList.remove('sel', 'ready')); }
 
 function place(sock) {
   const stone = S.sel, t = stone.dataset.type, i = +sock.dataset.i;
   // red: "first" = treasure is above; blue: "first" = treasure is left
-  const first = t === 'red' ? S.t.r <= i : S.t.c <= i;
-  const arrow = t === 'red' ? (first ? '▲' : '▼') : (first ? '◀' : '▶');
+  // Malicious opponent: the treasure is never fixed. It always "moves" to the larger remaining side,
+  // so only perfect halving (2 red cuts for 4 floors, 3 blue cuts for 8 doors) can ever win.
+  let a = 0;
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) if (S.alive[r][c] && (t === 'red' ? r <= i : c <= i)) a++;
+  const b = count() - a, first = a === b ? Math.random() < .5 : a > b;
+  const dir = t === 'red' ? (first ? 'up' : 'down') : (first ? 'left' : 'right');
   stone.classList.add('used'); clearSel();
   sock.classList.add('full');
-  sock.innerHTML = `<div class="stone ${t} spent"><span>${arrow}</span></div>`;
+  $$(`.socket.${t}[data-i="${i}"]`).forEach(x => x.classList.add('full'));
+  sock.innerHTML = `<div class="stone ${t} spent"><img src="assets/stone-${t}-calm.svg" alt="">${arrowSVG({ up: 0, right: 90, down: 180, left: 270 }[dir])}</div>`;
   S.used++;
   for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
     const keep = t === 'red' ? (first ? r <= i : r > i) : (first ? c <= i : c > i);
     S.alive[r][c] = S.alive[r][c] && keep;
   }
   play('place');
-  setTimeout(() => { play('zap'); bolts(sock, t); }, 220);
+  setTimeout(() => { play('zap'); bolts(sock, t, dir); }, 220);
   setTimeout(render, 900);
   if (S.used === 5) setTimeout(() => { if (count() > 1) endCard(false); }, 2400);
 }
 
-function bolts(sock, t) {
+function bolts(sock, t, dir) {
+  // One bolt from the stone to the screen edge in the stone's direction; doors light up as it passes.
   const svg = $('#bolts'), b = $('#board').getBoundingClientRect(), k = sock.getBoundingClientRect();
   const sx = k.x + k.width / 2 - b.x, sy = k.y + k.height / 2 - b.y;
+  const ex = dir === 'left' ? -b.x : dir === 'right' ? innerWidth - b.x : sx;
+  const ey = dir === 'up' ? -b.y : dir === 'down' ? innerHeight - b.y : sy;
+  const dx = ex - sx, dy = ey - sy, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
   svg.setAttribute('viewBox', `0 0 ${b.width} ${b.height}`);
   document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 450);
   const fl = document.createElement('div'); fl.className = 'flash'; document.body.appendChild(fl); setTimeout(() => fl.remove(), 400);
-  let n = 0;
+  const pts = [], steps = Math.max(6, Math.round(len / 16));
+  for (let j = 0; j <= steps; j++) {
+    const f = j / steps, o = j && j < steps ? (Math.random() - .5) * 22 : 0;
+    pts.push(`${sx + dx * f + nx * o},${sy + dy * f + ny * o}`);
+  }
+  ['glow', 'core'].forEach(cl => {
+    const p = document.createElementNS(NS, 'polyline');
+    p.setAttribute('points', pts.join(' ')); p.setAttribute('pathLength', 1);
+    p.setAttribute('class', `bolt ${cl} ${t}`); p.style.setProperty('--d', '0ms');
+    svg.appendChild(p); setTimeout(() => p.remove(), 1500);
+  });
   for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
     if (!S.alive[r][c]) continue;
     const d = doorEl(r, c), q = d.getBoundingClientRect();
-    const dx = q.x + q.width / 2 - b.x - sx, dy = q.y + q.height / 2 - b.y - sy, len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len, ny = dx / len, pts = [];
-    for (let j = 0; j <= 7; j++) {
-      const f = j / 7, o = j && j < 7 ? (Math.random() - .5) * len * .2 : 0;
-      pts.push(`${sx + dx * f + nx * o},${sy + dy * f + ny * o}`);
-    }
-    ['glow', 'core'].forEach(cl => {
-      const p = document.createElementNS(NS, 'polyline');
-      p.setAttribute('points', pts.join(' ')); p.setAttribute('pathLength', 1);
-      p.setAttribute('class', `bolt ${cl} ${t}`); p.style.setProperty('--d', n * 20 + 'ms');
-      svg.appendChild(p); setTimeout(() => p.remove(), 1500);
-    });
-    d.classList.add('zap'); setTimeout(() => d.classList.remove('zap'), 800);
-    n++;
+    const dist = Math.abs(dir === 'left' || dir === 'right' ? q.x + q.width / 2 - b.x - sx : q.y + q.height / 2 - b.y - sy);
+    setTimeout(() => { d.classList.add('zap'); setTimeout(() => d.classList.remove('zap'), 800); }, dist / len * 280);
   }
 }
 
@@ -124,6 +133,16 @@ function render() {
   }
 }
 
+/* Stone floors sit in the gaps between rows (plus a ground floor), spanning the doors */
+function floors() {
+  const f = $('#floors'), b = $('#board').getBoundingClientRect(), dr = $('#doors').getBoundingClientRect(); f.innerHTML = '';
+  const add = y => { const e = document.createElement('div'), x = dr.left - b.x - 6; e.className = 'floor';
+    Object.assign(e.style, { left: x + 'px', width: dr.right - b.x - x + 6 + 'px', top: y + 'px' }); f.appendChild(e); };
+  $$('.socket.red').forEach(s => { const k = s.getBoundingClientRect(); add(k.y + k.height / 2 - b.y); });
+  add(dr.bottom - b.y + 2);
+}
+addEventListener('resize', floors);
+
 /* ---------- Doors & endings ---------- */
 function tryDoor(d) {
   if (S.over) return;
@@ -131,7 +150,7 @@ function tryDoor(d) {
   const refuse = m => { play('deny'); d.classList.add('no'); setTimeout(() => d.classList.remove('no'), 450); say(m); };
   if (n > 1) return refuse(`There are ${n} possible doors where the treasure can be`);
   if (!S.alive[r][c]) return refuse('That door is sealed by magic. Try the glowing door!');
-  S.over = true; d.classList.add('open'); play('open');
+  S.over = true; d.querySelector('.back').innerHTML = '<img src="assets/chest.svg" alt="">'; d.classList.add('open'); play('open');
   setTimeout(() => { play('win'); coins(); endCard(true); }, 1000);
 }
 
@@ -163,7 +182,7 @@ document.addEventListener('click', e => {
   if (st) {
     if (S.over || st.classList.contains('used')) return;
     A(); const was = S.sel === st; clearSel();
-    if (!was) { S.sel = st; st.classList.add('sel'); $$('.socket.' + st.dataset.type + ':not(.full)').forEach(x => x.classList.add('ready')); play('pick'); }
+    if (!was) { S.sel = st; st.classList.add('sel'); $$('.socket.' + st.dataset.type + ':not(.full)').forEach(x => x.classList.add('ready')); $('#board').className = 'pick-' + st.dataset.type; play('pick'); }
     return;
   }
   const sk = e.target.closest('.socket');
